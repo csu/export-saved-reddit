@@ -13,7 +13,7 @@ from time import time
 import praw
 import AccountDetails
 
-## from https://gist.github.com/raphaa/1327761
+## Converter class from https://gist.github.com/raphaa/1327761
 class Converter():
     """Converts an CSV instapaper export to a Chrome bookmark file."""
  
@@ -41,7 +41,7 @@ class Converter():
                    '<META HTTP-EQUIV="Content-Type" CONTENT="text/html;'
                    ' charset=UTF-8">\n<TITLE>Bookmarks</TITLE>'
                    '\n<H1>Bookmarks</H1>\n<DL><P>\n<DT><H3 ADD_DATE="%(t)d"'
-                   ' LAST_MODIFIED="%(t)d">Instapaper</H3>'
+                   ' LAST_MODIFIED="%(t)d">Reddit</H3>'
                    '\n<DL><P>\n' % {'t': t})
         for folder in urls.keys():
             content += ('<DT><H3 ADD_DATE="%(t)d" LAST_MODIFIED="%(t)d">%(n)s'
