@@ -58,7 +58,7 @@ def main():
     r = praw.Reddit(user_agent='Subot 1.0')
     r.login(AccountDetails.REDDIT_USERNAME, AccountDetails.REDDIT_PASSWORD)
     export_csv = 'URL,Title,Selection,Folder\n'
-    for i in r.user.get_saved():
+    for i in r.user.get_saved(limit=None, time='all'):
         export_csv += ("%s,%s,,%s\n" % (str(i.permalink), i.title, str(i.subreddit)))
     with open("export-saved.csv", "w") as f:
         f.write(export_csv)
