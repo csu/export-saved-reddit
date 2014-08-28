@@ -15,7 +15,7 @@ import AccountDetails
 
 ## Converter class from https://gist.github.com/raphaa/1327761
 class Converter():
-    """Converts an CSV instapaper export to a Chrome bookmark file."""
+    """Converts a CSV instapaper export to a Chrome bookmark file."""
  
     def __init__(self, file):
         self._file = file
