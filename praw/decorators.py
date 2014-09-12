@@ -28,10 +28,14 @@ import sys
 from functools import wraps
 from requests.compat import urljoin
 from praw import errors
+from warnings import simplefilter, warn
 
 
 # Don't decorate functions when building the documentation
 IS_SPHINX_BUILD = bool(os.getenv('SPHINX_BUILD'))
+
+# Enable deprecation warnings
+simplefilter('default')
 
 
 def alias_function(function, class_name):
@@ -60,6 +64,22 @@ def alias_function(function, class_name):
                         .format(class_name, function.__name__))
     # Don't hide from sphinx as this is a parameter modifying decorator
     return wrapped
+
+
+def deprecated(msg=""):
+    """Deprecate decorated method."""
+    docstring_text = ("**DEPRECATED**. Will be removed in a future version "
+                      "of PRAW. %s" % msg)
+
+    def wrap(function):
+        function.__doc__ = _embed_text(function.__doc__, docstring_text)
+
+        @wraps(function)
+        def wrapped(self, *args, **kwargs):
+            warn(msg, DeprecationWarning)
+            return function(self, *args, **kwargs)
+        return function if IS_SPHINX_BUILD else wrapped
+    return wrap
 
 
 def limit_chars(function):
@@ -239,7 +259,6 @@ def restrict_access(scope, mod=None, login=None, oauth_only=False):
       * are called upon a RedditContent object with attribute subreddit
 
     """
-
     if not scope and oauth_only:
         raise TypeError('`scope` must be set when `oauth_only` is set')
 
@@ -271,8 +290,9 @@ def restrict_access(scope, mod=None, login=None, oauth_only=False):
                     # attribute to exist, thus it might not be set.
                     subreddit = cls if hasattr(cls, 'display_name') else False
                 else:
-                    subreddit = kwargs.get('subreddit', args[0] if args else
-                                           function.func_defaults[0])
+                    subreddit = kwargs.get(
+                        'subreddit', args[0] if args else
+                        six.get_function_defaults(function)[0])
             else:
                 subreddit = None
 
