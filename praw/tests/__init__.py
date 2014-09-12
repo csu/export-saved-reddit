@@ -20,18 +20,20 @@
 
 from __future__ import print_function, unicode_literals
 
+import mock
 import os
 import random
 import sys
 import time
 import unittest
 import uuid
+import warnings
 from functools import wraps
 from requests.compat import urljoin
 from requests.exceptions import HTTPError
-from six import advance_iterator as six_next, text_type
+from six import text_type
 
-from praw import Reddit, decorators, errors, helpers
+from praw import Reddit, decorators, errors, helpers, internal
 from praw.objects import (Comment, LoggedInRedditor, Message, MoreComments,
                           Submission)
 
@@ -96,7 +98,11 @@ class BasicHelper(object):
         self.priv_sr = 'reddit_api_test_priv'
         self.un = 'PyAPITestUser2'
         self.other_user_name = 'PyAPITestUser3'
+        self.other_non_mod_name = 'PyAPITestUser4'
         self.invalid_user_name = 'PyAPITestInvalid'
+        self.un_pswd = '1111'
+        self.other_user_pswd = '1111'
+        self.other_non_mod_pswd = '1111'
 
         if self.r.config.is_reddit:
             self.comment_url = self.url('/r/redditdev/comments/dtg4j/')
@@ -107,6 +113,7 @@ class BasicHelper(object):
             self.priv_submission_id = '16kbb7'
             self.refresh_token = {
                 'edit':            'FFx_0G7Zumyh4AWzIo39bG9KdIM',
+                'history':         'j_RKymm8srC3j6cxysYFQZbB4vc',
                 'identity':        'E4BgmO7iho0KOB1XlT8WEtyySf8',
                 'modconfig':       'bBGRgMY9Ai9_SZLZsaFvS647Mgk',
                 'modflair':        'UrMbtk4bOa040XAVz0uQn2gTE3s',
@@ -136,6 +143,14 @@ class BasicHelper(object):
     def disable_cache(self):
         self.r.config.cache_timeout = 0
 
+    def first(self, seq, predicate):
+        first_hit = next((x for x in seq if predicate(x)), None)
+        # Usage of self.assertTrue assumes all inheritance of this Class also
+        # inherits from unittest.Testcase
+        # pylint: disable-msg=E1101
+        self.assertTrue(first_hit is not None)
+        return first_hit
+
     def url(self, path):
         # pylint: disable-msg=W0212
         return urljoin(self.r.config._site_url, path)
@@ -144,19 +159,16 @@ class BasicHelper(object):
 class AuthenticatedHelper(BasicHelper):
     def configure(self):
         super(AuthenticatedHelper, self).configure()
-        self.r.login(self.un, '1111')
+        self.r.login(self.un, self.un_pswd)
 
 
 class AccessControlTests(unittest.TestCase, BasicHelper):
     def setUp(self):
         self.configure()
 
-    def test_exception_get_flair_list_authenticated(self):
-        self.r.login(self.un, '1111')
-        self.assertTrue(self.r.get_flair_list(self.sr))
-
     def test_exception_get_flair_list_unauthenticated(self):
-        self.assertTrue(self.r.get_flair_list(self.sr))
+        self.assertRaises(errors.LoginOrScopeRequired, self.r.get_flair_list,
+                          self.sr)
 
     def test_login_or_oauth_required_not_logged_in(self):
         self.assertRaises(errors.LoginOrScopeRequired,
@@ -180,25 +192,25 @@ class AccessControlTests(unittest.TestCase, BasicHelper):
 
     def test_moderator_or_oauth_required_logged_in_from_reddit_obj(self):
         oth = Reddit(USER_AGENT, disable_update_check=True)
-        oth.login('PyAPITestUser4', '1111')
+        oth.login(self.other_non_mod_name, self.other_non_mod_pswd)
         self.assertRaises(errors.ModeratorOrScopeRequired,
                           oth.get_settings, self.sr)
 
     def test_moderator_or_oauth_required_logged_in_from_submission_obj(self):
         oth = Reddit(USER_AGENT, disable_update_check=True)
-        oth.login('PyAPITestUser4', '1111')
+        oth.login(self.other_non_mod_name, self.other_non_mod_pswd)
         submission = oth.get_submission(url=self.comment_url)
         self.assertRaises(errors.ModeratorOrScopeRequired, submission.remove)
 
     def test_moderator_or_oauth_required_logged_in_from_subreddit_obj(self):
         oth = Reddit(USER_AGENT, disable_update_check=True)
-        oth.login('PyAPITestUser4', '1111')
+        oth.login(self.other_non_mod_name, self.other_non_mod_pswd)
         subreddit = oth.get_subreddit(self.sr)
         self.assertRaises(errors.ModeratorOrScopeRequired,
                           subreddit.get_settings)
 
     def test_moderator_required_multi(self):
-        self.r.login(self.un, '1111')
+        self.r.login(self.un, self.un_pswd)
         sub = self.r.get_subreddit('{0}+{1}'.format(self.sr, 'test'))
         self.assertRaises(errors.ModeratorRequired, sub.get_mod_queue)
 
@@ -210,6 +222,22 @@ class AccessControlTests(unittest.TestCase, BasicHelper):
 class BasicTest(unittest.TestCase, BasicHelper):
     def setUp(self):
         self.configure()
+
+    def test_base_36_conversion(self):
+        self.assertEquals(helpers.convert_numeric_id_to_id36(295), '87')
+        self.assertEquals(helpers.convert_id36_to_numeric_id('87'), 295)
+
+        self.assertEquals(helpers.convert_numeric_id_to_id36(275492), '5wkk')
+        self.assertEquals(helpers.convert_id36_to_numeric_id('5wkk'), 275492)
+
+        self.assertRaises(TypeError, helpers.convert_numeric_id_to_id36)
+        self.assertRaises(ValueError, helpers.convert_numeric_id_to_id36, '1')
+        self.assertRaises(ValueError, helpers.convert_numeric_id_to_id36, -1)
+
+        self.assertRaises(TypeError, helpers.convert_id36_to_numeric_id)
+        self.assertRaises(ValueError, helpers.convert_id36_to_numeric_id,
+                          't3_87')
+        self.assertRaises(ValueError, helpers.convert_id36_to_numeric_id, 87)
 
     def test_comments_contains_no_noncomment_objects(self):
         comments = self.r.get_submission(url=self.comment_url).comments
@@ -226,10 +254,14 @@ class BasicTest(unittest.TestCase, BasicHelper):
         self.assertTrue(text.startswith('<'))
         self.assertTrue(text.endswith('>'))
 
+    def test_deprecation(self):
+        with warnings.catch_warnings():
+            self.r.get_all_comments()
+
     def test_equality(self):
         subreddit = self.r.get_subreddit(self.sr)
         same_subreddit = self.r.get_subreddit(self.sr)
-        submission = six_next(subreddit.get_hot())
+        submission = next(subreddit.get_hot())
         self.assertTrue(subreddit == same_subreddit)
         self.assertFalse(subreddit != same_subreddit)
         self.assertFalse(subreddit == submission)
@@ -241,8 +273,8 @@ class BasicTest(unittest.TestCase, BasicHelper):
 
     def test_get_comments_gilded(self):
         gilded_comments = self.r.get_comments('all', gilded_only=True)
-        for comment in gilded_comments:
-            self.assertTrue(comment.gilded > 0)
+        self.assertTrue(all(comment.gilded > 0 for comment in
+                            gilded_comments))
 
     @reddit_only
     def test_get_controversial(self):
@@ -251,8 +283,9 @@ class BasicTest(unittest.TestCase, BasicHelper):
         self.assertEqual(num, len(list(result)))
 
     def test_get_flair_list(self):
-        sub = self.r.get_subreddit('python')
-        self.assertTrue(six_next(sub.get_flair_list()))
+        self.r.login(self.un, self.un_pswd)
+        sub = self.r.get_subreddit(self.sr)
+        self.assertTrue(next(sub.get_flair_list()))
 
     def test_get_front_page(self):
         num = 50
@@ -260,8 +293,14 @@ class BasicTest(unittest.TestCase, BasicHelper):
 
     def test_get_new(self):
         num = 50
-        result = self.r.get_new(limit=num, params={'sort': 'new'})
+        result = self.r.get_new(limit=num)
         self.assertEqual(num, len(list(result)))
+
+    @reddit_only
+    def test_get_new_subreddits(self):
+        num = 50
+        self.assertEqual(num,
+                         len(list(self.r.get_new_subreddits(limit=num))))
 
     @reddit_only
     def test_get_popular_subreddits(self):
@@ -275,12 +314,35 @@ class BasicTest(unittest.TestCase, BasicHelper):
             subs.add(self.r.get_subreddit('RANDOM').display_name)
         self.assertTrue(len(subs) > 1)
 
+    def test_get_rising(self):
+        # Use low limit as rising listing has few elements. Keeping the limit
+        # prevents this test from becoming flaky.
+        num = 5
+        result = self.r.get_rising(limit=num)
+        self.assertEqual(num, len(list(result)))
+
     def test_get_submissions(self):
         def fullname(url):
             return self.r.get_submission(url).fullname
         fullnames = [fullname(self.comment_url), fullname(self.link_url)] * 100
         retreived = [x.fullname for x in self.r.get_submissions(fullnames)]
         self.assertEqual(fullnames, retreived)
+
+    @mock.patch.object(Reddit, 'request_json')
+    def test_get_submissions_with_params(self, mock_my_method):
+        fake_submission = Submission(self.r, {'permalink': 'meh', 'score': 2,
+                                              'title': 'test'})
+        mock_resp = ({'data': {'children': [fake_submission]}},
+                     {'data': {'children': []}})
+        mock_my_method.return_value = mock_resp
+        url = ("http://www.reddit.com/r/redditgetsdrawn/comments/"
+               "1ts9hi/surprise_me_thanks_in_advance/cec0897?context=3")
+        self.assertTrue(self.r.get_submission(url).score == 2)
+        self.assertTrue(self.r.get_submission(url).title == 'test')
+        base_url = ("http://www.reddit.com/r/redditgetsdrawn/comments/"
+                    "1ts9hi/surprise_me_thanks_in_advance/cec0897")
+        params = {"context": "3"}
+        mock_my_method.assert_called_with(base_url, params=params)
 
     @reddit_only
     def test_get_top(self):
@@ -321,7 +383,7 @@ class BasicTest(unittest.TestCase, BasicHelper):
 
     @reddit_only
     def test_search(self):
-        self.assertTrue(len(list(self.r.search('test'))) > 0)
+        self.assertTrue(list(self.r.search('test')))
 
     @reddit_only
     def test_search_with_syntax(self):
@@ -335,18 +397,27 @@ class BasicTest(unittest.TestCase, BasicHelper):
 
     @reddit_only
     def test_search_with_time_window(self):
+        num = 50
         submissions = len(list(self.r.search('test', subreddit=self.sr,
-                                             period='week', limit=1000)))
-        self.assertTrue(submissions > 0)
-        self.assertTrue(submissions < 1000)
+                                             period='all', limit=num)))
+        self.assertTrue(submissions == num)
 
     def test_search_reddit_names(self):
-        self.assertTrue(len(self.r.search_reddit_names('reddit')) > 0)
+        self.assertTrue(self.r.search_reddit_names('reddit'))
 
-    #def test_timeout(self):
-        # pylint: disable-msg=W0212
-    #    self.assertRaises(Timeout, helpers._request, self.r,
-    #                      self.r.config['comments'], timeout=0.001)
+    def test_store_json_result(self):
+        self.r.config.store_json_result = True
+        sub_url = ('http://www.reddit.com/r/reddit_api_test/comments/'
+                   '1f7ojw/oauth_submit/')
+        sub = self.r.get_submission(url=sub_url)
+        self.assertEqual(sub.json_dict['url'], sub_url)
+
+    def test_store_lazy_json_result(self):
+        self.r.config.store_json_result = True
+        subreddit = self.r.get_subreddit(self.sr)
+        # Force object to load
+        subreddit.title
+        self.assertEqual(subreddit.json_dict['display_name'], self.sr)
 
 
 class CacheTest(unittest.TestCase, AuthenticatedHelper):
@@ -377,7 +448,7 @@ class CacheTest(unittest.TestCase, AuthenticatedHelper):
     def test_refresh_submission(self):
         self.disable_cache()
         subreddit = self.r.get_subreddit(self.sr)
-        submission = six_next(subreddit.get_top())
+        submission = next(subreddit.get_top())
         same_submission = self.r.get_submission(submission_id=submission.id)
         if submission.likes:
             submission.downvote()
@@ -392,10 +463,12 @@ class EmbedTextTest(unittest.TestCase):
     embed_text = "Hello"
 
     def test_no_docstring(self):
+        # pylint: disable-msg=W0212
         new_doc = decorators._embed_text(None, self.embed_text)
         self.assertEqual(new_doc, self.embed_text)
 
     def test_one_liner(self):
+        # pylint: disable-msg=W0212
         new_doc = decorators._embed_text("Returns something cool",
                                          self.embed_text)
         self.assertEqual(new_doc,
@@ -407,6 +480,7 @@ class EmbedTextTest(unittest.TestCase):
               Only run if foo is instantiated.
 
               """
+        # pylint: disable-msg=W0212
         new_doc = decorators._embed_text(doc, self.embed_text)
         self.assertEqual(new_doc, doc + self.embed_text + "\n\n")
 
@@ -423,6 +497,7 @@ class EmbedTextTest(unittest.TestCase):
               :params foo: Self explanatory.
 
               """.format(self.embed_text)
+        # pylint: disable-msg=W0212
         new_doc = decorators._embed_text(doc, self.embed_text)
         self.assertEqual(new_doc, expected_doc)
 
@@ -445,6 +520,7 @@ class EmbedTextTest(unittest.TestCase):
               :returns: The jiggered bar.
 
               """.format(self.embed_text)
+        # pylint: disable-msg=W0212
         new_doc = decorators._embed_text(doc, self.embed_text)
         self.assertEqual(new_doc, expected_doc)
 
@@ -475,6 +551,7 @@ class EmbedTextTest(unittest.TestCase):
               altered.
 
               """.format(self.embed_text)
+        # pylint: disable-msg=W0212
         new_doc = decorators._embed_text(doc, self.embed_text)
         self.assertEqual(new_doc, expected_doc)
 
@@ -485,15 +562,15 @@ class EncodingTest(unittest.TestCase, AuthenticatedHelper):
 
     def test_author_encoding(self):
         # pylint: disable-msg=E1101
-        a1 = six_next(self.r.get_new()).author
+        a1 = next(self.r.get_new()).author
         a2 = self.r.get_redditor(text_type(a1))
         self.assertEqual(a1, a2)
-        s1 = six_next(a1.get_submitted())
-        s2 = six_next(a2.get_submitted())
+        s1 = next(a1.get_submitted())
+        s2 = next(a2.get_submitted())
         self.assertEqual(s1, s2)
 
     def test_unicode_comment(self):
-        sub = six_next(self.r.get_subreddit(self.sr).get_new())
+        sub = next(self.r.get_subreddit(self.sr).get_new())
         text = 'Have some unicode: (\xd0, \xdd)'
         comment = sub.add_comment(text)
         self.assertEqual(text, comment.body)
@@ -530,12 +607,9 @@ class MoreCommentsTest(unittest.TestCase, AuthenticatedHelper):
         self.assertTrue(saved)
 
     def test_comments_method(self):
-        for item in self.submission.comments:
-            if isinstance(item, MoreComments):
-                self.assertTrue(item.comments())
-                break
-        else:
-            self.fail('Could not find MoreComment object.')
+        predicate = lambda item: isinstance(item, MoreComments)
+        item = self.first(self.submission.comments, predicate)
+        self.assertTrue(item.comments())
 
 
 class CommentEditTest(unittest.TestCase, AuthenticatedHelper):
@@ -543,7 +617,7 @@ class CommentEditTest(unittest.TestCase, AuthenticatedHelper):
         self.configure()
 
     def test_reply(self):
-        comment = six_next(self.r.user.get_comments())
+        comment = next(self.r.user.get_comments())
         new_body = '%s\n\n+Edit Text' % comment.body
         comment = comment.edit(new_body)
         self.assertEqual(comment.body, new_body)
@@ -554,20 +628,17 @@ class CommentPermalinkTest(unittest.TestCase, AuthenticatedHelper):
         self.configure()
 
     def test_inbox_permalink(self):
-        for item in self.r.get_inbox():
-            if isinstance(item, Comment):
-                self.assertTrue(item.id in item.permalink)
-                break
-        else:
-            self.fail('Could not find comment reply in inbox')
+        predicate = lambda item: isinstance(item, Comment)
+        item = self.first(self.r.get_inbox(), predicate)
+        self.assertTrue(item.id in item.permalink)
 
     def test_user_comments_permalink(self):
-        item = six_next(self.r.user.get_comments())
+        item = next(self.r.user.get_comments())
         self.assertTrue(item.id in item.permalink)
 
     def test_get_comments_permalink(self):
         sub = self.r.get_subreddit(self.sr)
-        item = six_next(sub.get_comments())
+        item = next(sub.get_comments())
         self.assertTrue(item.id in item.permalink)
 
 
@@ -579,7 +650,7 @@ class CommentReplyTest(unittest.TestCase, AuthenticatedHelper):
     def test_add_comment_and_verify(self):
         text = 'Unique comment: %s' % uuid.uuid4()
         # pylint: disable-msg=E1101
-        submission = six_next(self.subreddit.get_new())
+        submission = next(self.subreddit.get_new())
         # pylint: enable-msg=E1101
         comment = submission.add_comment(text)
         self.assertEqual(comment.submission, submission)
@@ -587,14 +658,9 @@ class CommentReplyTest(unittest.TestCase, AuthenticatedHelper):
 
     def test_add_reply_and_verify(self):
         text = 'Unique reply: %s' % uuid.uuid4()
-        found = None
-        for submission in self.subreddit.get_new():
-            if submission.num_comments > 0:
-                found = submission
-                break
-        else:
-            self.fail('Could not find a submission with comments.')
-        comment = found.comments[0]
+        predicate = lambda submission: submission.num_comments > 0
+        submission = self.first(self.subreddit.get_new(), predicate)
+        comment = submission.comments[0]
         reply = comment.reply(text)
         self.assertEqual(reply.parent_id, comment.fullname)
         self.assertEqual(reply.body, text)
@@ -606,35 +672,27 @@ class CommentReplyNoneTest(unittest.TestCase, AuthenticatedHelper):
 
     def test_front_page_comment_replies_are_none(self):
         # pylint: disable-msg=E1101,W0212
-        item = six_next(self.r.get_comments('all'))
+        item = next(self.r.get_comments('all'))
         self.assertEqual(item._replies, None)
 
     def test_inbox_comment_replies_are_none(self):
-        for item in self.r.get_inbox():
-            if isinstance(item, Comment):
-                # pylint: disable-msg=W0212
-                self.assertEqual(item._replies, None)
-                break
-        else:
-            self.fail('Could not find comment in inbox')
+        predicate = lambda item: isinstance(item, Comment)
+        comment = self.first(self.r.get_inbox(), predicate)
+        # pylint: disable-msg=W0212
+        self.assertEqual(comment._replies, None)
 
     def test_spambox_comments_replies_are_none(self):
-        for item in self.r.get_subreddit(self.sr).get_spam():
-            if isinstance(item, Comment):
-                # pylint: disable-msg=W0212
-                self.assertEqual(item._replies, None)
-                break
-        else:
-            self.fail('Could not find comment in spambox')
+        predicate = lambda item: isinstance(item, Comment)
+        sequence = self.r.get_subreddit(self.sr).get_spam()
+        comment = self.first(sequence, predicate)
+        # pylint: disable-msg=W0212
+        self.assertEqual(comment._replies, None)
 
     def test_user_comment_replies_are_none(self):
-        for item in self.r.user.get_comments():
-            if isinstance(item, Comment):
-                # pylint: disable-msg=W0212
-                self.assertEqual(item._replies, None)
-                break
-        else:
-            self.fail('Could not find comment on other user\'s list')
+        predicate = lambda item: isinstance(item, Comment)
+        comment = self.first(self.r.user.get_comments(), predicate)
+        # pylint: disable-msg=W0212
+        self.assertEqual(comment._replies, None)
 
 
 class FlairTest(unittest.TestCase, AuthenticatedHelper):
@@ -644,20 +702,20 @@ class FlairTest(unittest.TestCase, AuthenticatedHelper):
 
     def test_add_link_flair(self):
         flair_text = 'Flair: %s' % uuid.uuid4()
-        sub = six_next(self.subreddit.get_new())
+        sub = next(self.subreddit.get_new())
         self.subreddit.set_flair(sub, flair_text)
         sub = self.r.get_submission(sub.permalink)
         self.assertEqual(sub.link_flair_text, flair_text)
 
     def test_add_link_flair_through_submission(self):
         flair_text = 'Flair: %s' % uuid.uuid4()
-        sub = six_next(self.subreddit.get_new())
+        sub = next(self.subreddit.get_new())
         sub.set_flair(flair_text)
         sub = self.r.get_submission(sub.permalink)
         self.assertEqual(sub.link_flair_text, flair_text)
 
     def test_add_link_flair_to_invalid_subreddit(self):
-        sub = six_next(self.r.get_subreddit('python').get_new())
+        sub = next(self.r.get_subreddit('python').get_new())
         self.assertRaises(HTTPError, self.subreddit.set_flair, sub, 'text')
 
     def test_add_user_flair_by_subreddit_name(self):
@@ -698,15 +756,16 @@ class FlairTest(unittest.TestCase, AuthenticatedHelper):
 
         # Set flair
         flair_mapping = [{'user': 'reddit', 'flair_text': 'dev'},
-                         {'user': 'PyAPITestUser2', 'flair_css_class': 'xx'},
-                         {'user': 'PyAPITestUser3', 'flair_text': 'AWESOME',
+                         {'user': self.un, 'flair_css_class': 'xx'},
+                         {'user': self.other_user_name,
+                          'flair_text': 'AWESOME',
                           'flair_css_class': 'css'}]
         self.subreddit.set_flair_csv(flair_mapping)
         self.assertEqual([], flair_diff(flair_mapping,
                                         list(self.subreddit.get_flair_list())))
 
     def test_flair_csv_many(self):
-        users = ('reddit', 'pyapitestuser2', 'pyapitestuser3')
+        users = ('reddit', self.un, self.other_user_name)
         flair_text_a = 'Flair: %s' % uuid.uuid4()
         flair_text_b = 'Flair: %s' % uuid.uuid4()
         flair_mapping = [{'user': 'reddit', 'flair_text': flair_text_a}] * 99
@@ -719,7 +778,8 @@ class FlairTest(unittest.TestCase, AuthenticatedHelper):
 
     def test_flair_csv_optional_args(self):
         flair_mapping = [{'user': 'reddit', 'flair_text': 'reddit'},
-                         {'user': 'pyapitestuser3', 'flair_css_class': 'blah'}]
+                         {'user': self.other_user_name, 'flair_css_class':
+                          'blah'}]
         self.subreddit.set_flair_csv(flair_mapping)
 
     def test_flair_csv_empty(self):
@@ -776,7 +836,7 @@ class FlairSelectTest(unittest.TestCase, AuthenticatedHelper):
         self.assertEqual(flair['flair_css_class'], flair_class)
 
     def test_select_link_flair(self):
-        sub = six_next(self.subreddit.get_new())
+        sub = next(self.subreddit.get_new())
         flair_class = self.get_different_link_flair_class(sub)
         flair_id = self.link_flair_templates[flair_class][0]
         flair_default_text = self.link_flair_templates[flair_class][1]
@@ -798,7 +858,7 @@ class FlairSelectTest(unittest.TestCase, AuthenticatedHelper):
         self.assertEqual(flair['flair_css_class'], flair_class)
 
     def test_select_link_flair_custom_text(self):
-        sub = six_next(self.subreddit.get_new())
+        sub = next(self.subreddit.get_new())
         flair_class = self.get_different_link_flair_class(sub)
         flair_id = self.link_flair_templates[flair_class][0]
         flair_text = 'Flair: %s' % uuid.uuid4()
@@ -822,7 +882,7 @@ class FlairSelectTest(unittest.TestCase, AuthenticatedHelper):
         self.assertEqual(flair['flair_css_class'], None)
 
     def test_select_link_flair_remove(self):
-        sub = six_next(self.subreddit.get_new())
+        sub = next(self.subreddit.get_new())
         if sub.link_flair_css_class is None:
             flair_class = self.get_different_link_flair_class(sub)
             flair_id = self.link_flair_templates[flair_class][0]
@@ -922,7 +982,7 @@ class ImageTests(unittest.TestCase, AuthenticatedHelper):
         name = text_type(uuid.uuid4())
         self.assertTrue(self.subreddit.upload_image(image, name))
         images_json = self.subreddit.get_stylesheet()['images']
-        self.assertTrue(name in text_type(x['name']) for x in images_json)
+        self.assertTrue(any(name in text_type(x['name']) for x in images_json))
 
     @reddit_only
     def test_upload_jpg_image_no_extension(self):
@@ -945,22 +1005,22 @@ class ImageTests(unittest.TestCase, AuthenticatedHelper):
         name = text_type(uuid.uuid4())
         self.assertTrue(self.subreddit.upload_image(image, name))
         images_json = self.subreddit.get_stylesheet()['images']
-        self.assertTrue(name in text_type(x['name']) for x in images_json)
+        self.assertTrue(any(name in text_type(x['name']) for x in images_json))
 
 
-class LocalOnlyTest(unittest.TestCase, BasicHelper):
+class LocalOnlyTest(unittest.TestCase, AuthenticatedHelper):
     def setUp(self):
         self.configure()
 
     @local_only
     def test_create_existing_redditor(self):
-        self.r.login(self.un, '1111')
+        self.r.login(self.un, self.un_pswd)
         self.assertRaises(errors.UsernameExists, self.r.create_redditor,
-                          self.other_user_name, '1111')
+                          self.other_user_name, self.other_user_pswd)
 
     @local_only
     def test_create_existing_subreddit(self):
-        self.r.login(self.un, '1111')
+        self.r.login(self.un, self.un_pswd)
         self.assertRaises(errors.SubredditExists, self.r.create_subreddit,
                           self.sr, 'foo')
 
@@ -973,9 +1033,30 @@ class LocalOnlyTest(unittest.TestCase, BasicHelper):
     def test_create_subreddit(self):
         unique_name = 'test%d' % random.randint(3, 10240)
         description = '#Welcome to %s\n\n0 item 1\n0 item 2\n' % unique_name
-        self.r.login(self.un, '1111')
+        self.r.login(self.un, self.un_pswd)
         self.r.create_subreddit(unique_name, 'The %s' % unique_name,
                                 description)
+
+    @local_only
+    def test_delete_redditor(self):
+        random_u = 'PyAPITestUser%d' % random.randint(3, 10240)
+        random_p = 'pass%d' % random.randint(3, 10240)
+        self.r.create_redditor(random_u, random_p)
+        self.r.login(random_u, random_p)
+        self.assertTrue(self.r.is_logged_in())
+        self.r.delete(random_p)
+        self.r.clear_authentication()
+        self.assertRaises(errors.InvalidUserPass, self.r.login, random_u,
+                          random_p)
+
+    @local_only
+    def test_delete_redditor_wrong_password(self):
+        random_u = 'PyAPITestUser%d' % random.randint(3, 10240)
+        random_p = 'pass%d' % random.randint(3, 10240)
+        self.r.create_redditor(random_u, random_p)
+        self.r.login(random_u, random_p)
+        self.assertTrue(self.r.is_logged_in())
+        self.assertRaises(errors.InvalidUserPass, self.r.delete, 'wxyz')
 
     @local_only
     def test_failed_feedback(self):
@@ -994,35 +1075,29 @@ class MessageTest(unittest.TestCase, AuthenticatedHelper):
 
     def test_get_unread_update_has_mail(self):
         self.r.send_message(self.other_user_name, 'Update has mail', 'body')
-        self.r.login(self.other_user_name, '1111')
+        self.r.login(self.other_user_name, self.other_user_pswd)
         self.assertTrue(self.r.user.has_mail)
         self.r.get_unread(limit=1, unset_has_mail=True, update_user=True)
         self.assertFalse(self.r.user.has_mail)
 
     def test_mark_as_read(self):
         oth = Reddit(USER_AGENT, disable_update_check=True)
-        oth.login('PyAPITestUser3', '1111')
+        oth.login(self.other_user_name, self.other_user_pswd)
         # pylint: disable-msg=E1101
-        msg = six_next(oth.get_unread(limit=1))
+        msg = next(oth.get_unread(limit=1))
         msg.mark_as_read()
         self.assertTrue(msg not in oth.get_unread(limit=5))
 
     def test_mark_as_unread(self):
         oth = Reddit(USER_AGENT, disable_update_check=True)
-        oth.login('PyAPITestUser3', '1111')
-        found = None
-        for msg in oth.get_inbox():
-            if not msg.new:
-                found = msg
-                msg.mark_as_unread()
-                break
-        else:
-            self.fail('Could not find a read message.')
-        self.assertTrue(found in oth.get_unread())
+        oth.login(self.other_user_name, self.other_user_pswd)
+        msg = self.first(oth.get_inbox(), lambda msg: not msg.new)
+        msg.mark_as_unread()
+        self.assertTrue(msg in oth.get_unread())
 
     def test_mark_multiple_as_read(self):
         oth = Reddit(USER_AGENT, disable_update_check=True)
-        oth.login('PyAPITestUser3', '1111')
+        oth.login(self.other_user_name, self.other_user_pswd)
         messages = []
         for msg in oth.get_unread(limit=None):
             if msg.author != oth.user.name:
@@ -1032,29 +1107,20 @@ class MessageTest(unittest.TestCase, AuthenticatedHelper):
         self.assertEqual(2, len(messages))
         oth.user.mark_as_read(messages)
         unread = list(oth.get_unread(limit=5))
-        for msg in messages:
-            self.assertTrue(msg not in unread)
+        self.assertTrue(all(msg not in unread for msg in messages))
 
     def test_reply_to_message_and_verify(self):
         text = 'Unique message reply: %s' % uuid.uuid4()
-        found = None
-        for msg in self.r.get_inbox():
-            if isinstance(msg, Message) and msg.author == self.r.user:
-                found = msg
-                break
-        else:
-            self.fail('Could not find a self-message in the inbox')
-        reply = found.reply(text)
-        self.assertEqual(reply.parent_id, found.fullname)
+        predicate = lambda msg: (isinstance(msg, Message)
+                                 and msg.author == self.r.user)
+        msg = self.first(self.r.get_inbox(), predicate)
+        reply = msg.reply(text)
+        self.assertEqual(reply.parent_id, msg.fullname)
 
     def test_send(self):
         subject = 'Unique message: %s' % uuid.uuid4()
         self.r.user.send_message(subject, 'Message content')
-        for msg in self.r.get_inbox():
-            if msg.subject == subject:
-                break
-        else:
-            self.fail('Could not find the message we just sent to ourself.')
+        self.first(self.r.get_inbox(), lambda msg: msg.subject == subject)
 
     def test_send_invalid(self):
         subject = 'Unique message: %s' % uuid.uuid4()
@@ -1068,26 +1134,30 @@ class ModeratorSubmissionTest(unittest.TestCase, AuthenticatedHelper):
         self.subreddit = self.r.get_subreddit(self.sr)
 
     def test_approve(self):
-        submission = six_next(self.subreddit.get_spam())
+        submission = next(self.subreddit.get_spam())
         if not submission:
             self.fail('Could not find a submission to approve.')
         submission.approve()
-        for approved in self.subreddit.get_new():
-            if approved.id == submission.id:
-                break
-        else:
-            self.fail('Could not find approved submission.')
+        predicate = lambda approved: approved.id == submission.id
+        self.first(self.subreddit.get_new(), predicate)
+
+    def test_ignore_reports(self):
+        submission = next(self.subreddit.get_new())
+        self.assertFalse(submission in self.subreddit.get_mod_log())
+        submission.ignore_reports()
+        submission.report()
+        self.disable_cache()
+        submission.refresh()
+        self.assertFalse(submission in self.subreddit.get_mod_log())
+        self.assertTrue(submission.num_reports > 0)
 
     def test_remove(self):
-        submission = six_next(self.subreddit.get_new())
+        submission = next(self.subreddit.get_new())
         if not submission:
             self.fail('Could not find a submission to remove.')
         submission.remove()
-        for removed in self.subreddit.get_spam():
-            if removed.id == submission.id:
-                break
-        else:
-            self.fail('Could not find removed submission.')
+        predicate = lambda removed: removed.id == submission.id
+        self.first(self.subreddit.get_spam(), predicate)
 
 
 class ModeratorSubredditTest(unittest.TestCase, AuthenticatedHelper):
@@ -1102,7 +1172,6 @@ class ModeratorSubredditTest(unittest.TestCase, AuthenticatedHelper):
         other = self.r.get_redditor(self.other_user_name)
         actions = list(self.subreddit.get_mod_log(mod=other.name))
         self.assertTrue(actions)
-        #self.assertTrue(all(x.mod_id36 == other.id for x in actions))
         self.assertTrue(all(x.mod.lower() == other.name.lower()
                             for x in actions))
 
@@ -1110,7 +1179,6 @@ class ModeratorSubredditTest(unittest.TestCase, AuthenticatedHelper):
         other = self.r.get_redditor(self.other_user_name)
         actions = list(self.subreddit.get_mod_log(mod=other))
         self.assertTrue(actions)
-        #self.assertTrue(all(x.mod_id36 == other.id for x in actions))
         self.assertTrue(all(x.mod.lower() == other.name.lower()
                             for x in actions))
 
@@ -1122,35 +1190,27 @@ class ModeratorSubredditTest(unittest.TestCase, AuthenticatedHelper):
     def test_mod_mail_send(self):
         subject = 'Unique message: %s' % uuid.uuid4()
         self.r.get_subreddit(self.sr).send_message(subject, 'Content')
-        for msg in self.r.get_mod_mail():
-            if msg.subject == subject:
-                break
-        else:
-            self.fail('Could not find the message we just sent to ourself.')
+        self.first(self.r.get_mod_mail(), lambda msg: msg.subject == subject)
 
     def test_get_mod_queue(self):
-        mod_submissions = list(self.r.get_subreddit('mod').get_mod_queue())
-        self.assertTrue(len(mod_submissions) > 0)
+        self.assertTrue(list(self.r.get_subreddit('mod').get_mod_queue()))
 
     def test_get_mod_queue_with_default_subreddit(self):
-        mod_submissions = list(self.r.get_mod_queue())
-        self.assertTrue(len(mod_submissions) > 0)
+        self.assertTrue(list(self.r.get_mod_queue()))
 
     def test_get_mod_queue_multi(self):
-        multi = '{0}+{1}'.format(self.sr, 'reddit_api_test2')
-        mod_submissions = list(self.r.get_subreddit(multi).get_mod_queue())
-        self.assertTrue(len(mod_submissions) > 0)
+        multi = '{0}+{1}'.format(self.sr, self.priv_sr)
+        self.assertTrue(list(self.r.get_subreddit(multi).get_mod_queue()))
 
     def test_get_unmoderated(self):
-        submissions = list(self.subreddit.get_unmoderated())
-        self.assertTrue(len(submissions) > 0)
+        self.assertTrue(list(self.subreddit.get_unmoderated()))
 
 
 class ModeratorUserTest(unittest.TestCase, AuthenticatedHelper):
     def setUp(self):
         self.configure()
         self.subreddit = self.r.get_subreddit(self.sr)
-        self.other = self.r.get_redditor('pyapitestuser3', fetch=True)
+        self.other = self.r.get_redditor(self.other_user_name, fetch=True)
 
     def add_remove(self, add, remove, listing, add_callback=None):
         def test_add():
@@ -1172,13 +1232,20 @@ class ModeratorUserTest(unittest.TestCase, AuthenticatedHelper):
             test_remove()
 
     def test_accept_moderator_invite_fail(self):
-        self.r.login('pyapitestuser3', '1111')
+        self.r.login(self.other_user_name, self.other_user_pswd)
         self.assertRaises(errors.InvalidInvite,
                           self.subreddit.accept_moderator_invite)
 
     def test_ban(self):
         self.add_remove(self.subreddit.add_ban, self.subreddit.remove_ban,
                         self.subreddit.get_banned)
+
+    def test_get_banned_note(self):
+        # TODO: Update this test to add/update the ban note when ban note
+        # adding is supported.
+        params = {'user': self.other_non_mod_name}
+        data = next(self.subreddit.get_banned(user_only=False, params=params))
+        self.assertEqual(data['note'], 'no reason in particular 2')
 
     def test_contributors(self):
         self.add_remove(self.subreddit.add_contributor,
@@ -1188,7 +1255,7 @@ class ModeratorUserTest(unittest.TestCase, AuthenticatedHelper):
     def test_moderator(self):
         def add_callback():
             tmp = Reddit(USER_AGENT, disable_update_check=True)
-            tmp.login('pyapitestuser3', '1111')
+            tmp.login(self.other_user_name, self.other_user_pswd)
             tmp.get_subreddit(self.sr).accept_moderator_invite()
 
         self.add_remove(self.subreddit.add_moderator,
@@ -1267,6 +1334,11 @@ class OAuth2Test(unittest.TestCase, BasicHelper):
         self.assertEqual(submission, submission.edit('Edited text'))
 
     @reddit_only
+    def test_scope_history(self):
+        self.r.refresh_access_information(self.refresh_token['history'])
+        self.assertTrue(list(self.r.get_redditor(self.un).get_liked()))
+
+    @reddit_only
     def test_scope_identity(self):
         self.r.refresh_access_information(self.refresh_token['identity'])
         self.assertEqual(self.un, self.r.get_me().name)
@@ -1283,9 +1355,10 @@ class OAuth2Test(unittest.TestCase, BasicHelper):
 
     @reddit_only
     def test_scope_modlog(self):
+        num = 50
         self.r.refresh_access_information(self.refresh_token['modlog'])
-        self.assertEqual(
-            25, len(list(self.r.get_subreddit(self.sr).get_mod_log())))
+        result = self.r.get_subreddit(self.sr).get_mod_log(limit=num)
+        self.assertEqual(num, len(list(result)))
 
     @reddit_only
     def test_scope_modposts(self):
@@ -1325,7 +1398,7 @@ class OAuth2Test(unittest.TestCase, BasicHelper):
     def test_scope_read_get_sub_listingr(self):
         self.r.refresh_access_information(self.refresh_token['read'])
         subreddit = self.r.get_subreddit(self.priv_sr)
-        self.assertTrue(len(list(subreddit.get_top())))
+        self.assertTrue(list(subreddit.get_top()))
 
     @reddit_only
     def test_scope_read_get_submission_by_url(self):
@@ -1338,19 +1411,19 @@ class OAuth2Test(unittest.TestCase, BasicHelper):
     @reddit_only
     def test_scope_read_priv_sr_comments(self):
         self.r.refresh_access_information(self.refresh_token['read'])
-        self.assertTrue(len(list(self.r.get_comments(self.priv_sr))))
+        self.assertTrue(list(self.r.get_comments(self.priv_sr)))
 
     @reddit_only
     def test_scope_read_priv_sub_comments(self):
         self.r.refresh_access_information(self.refresh_token['read'])
         submission = Submission.from_id(self.r, self.priv_submission_id)
-        self.assertTrue(len(list(submission.comments)))
+        self.assertTrue(submission.comments)
 
     @reddit_only
     def test_scope_submit(self):
         self.r.refresh_access_information(self.refresh_token['submit'])
-        retval = self.r.submit(self.sr, 'OAuth Submit', text='Foo')
-        self.assertTrue(isinstance(retval, Submission))
+        result = self.r.submit(self.sr, 'OAuth Submit', text='Foo')
+        self.assertTrue(isinstance(result, Submission))
 
     @reddit_only
     def test_scope_subscribe(self):
@@ -1366,10 +1439,10 @@ class OAuth2Test(unittest.TestCase, BasicHelper):
     @reddit_only
     def test_set_access_credentials(self):
         self.assertTrue(self.r.user is None)
-        retval = self.r.refresh_access_information(
+        result = self.r.refresh_access_information(
             self.refresh_token['identity'], update_session=False)
         self.assertTrue(self.r.user is None)
-        self.r.set_access_credentials(**retval)
+        self.r.set_access_credentials(**result)
         self.assertFalse(self.r.user is None)
 
     @reddit_only
@@ -1391,50 +1464,44 @@ class RedditorTest(unittest.TestCase, AuthenticatedHelper):
         self.configure()
         self.other_user = self.r.get_redditor(self.other_user_name)
 
-    def test_add_remove_friends(self):
-        def verify_add():
-            self.other_user.friend()
-            self.assertTrue(self.other_user in self.r.user.get_friends())
-
-        def verify_remove():
-            self.other_user.unfriend()
-            self.assertTrue(self.other_user not in self.r.user.get_friends())
-
-        if self.other_user in self.r.user.get_friends():
-            verify_remove()
-            verify_add()
-        else:
-            verify_add()
-            verify_remove()
-
     def test_duplicate_login(self):
-        self.r.login(self.other_user_name, '1111')
+        self.r.login(self.other_user_name, self.other_user_pswd)
 
     def test_get_disliked(self):
         # Pulls from get_liked. Problem here may come from get_liked
-        item = six_next(self.r.user.get_liked())
+        item = next(self.r.user.get_liked())
         item.downvote()
         self.delay()  # The queue needs to be processed
-        self.assertFalse(item in list(self.r.user.get_liked()))
+        self.assertFalse(item in self.r.user.get_liked())
+
+    def test_get_friends(self):
+        # See issue 175.
+        # If this test fails and doesn't raise an exception, but smoothly calls
+        # self.r.user.get_friends, then issue 175 has been resolved.
+        self.assertRaises(errors.RedirectException, self.r.user.get_friends)
 
     def test_get_hidden(self):
-        submission = six_next(self.r.user.get_submitted())
+        submission = next(self.r.user.get_submitted())
         submission.hide()
         self.delay()  # The queue needs to be processed
-        item = six_next(self.r.user.get_hidden())
+        item = next(self.r.user.get_hidden())
         item.unhide()
         self.delay()
-        self.assertFalse(item in list(self.r.user.get_hidden()))
+        self.assertFalse(item in self.r.user.get_hidden())
 
     def test_get_liked(self):
         # Pulls from get_disliked. Problem here may come from get_disliked
-        item = six_next(self.r.user.get_disliked())
+        item = next(self.r.user.get_disliked())
         item.upvote()
         self.delay()  # The queue needs to be processed
-        self.assertFalse(item in list(self.r.user.get_disliked()))
+        self.assertFalse(item in self.r.user.get_disliked())
 
     def test_get_redditor(self):
         self.assertEqual(self.other_user_id, self.other_user.id)
+
+    def test_get_submitted(self):
+        redditor = self.r.get_redditor(self.other_non_mod_name)
+        self.assertTrue(list(redditor.get_submitted()))
 
     def test_user_set_on_login(self):
         self.assertTrue(isinstance(self.r.user, LoggedInRedditor))
@@ -1493,16 +1560,19 @@ class SubmissionCreateTest(unittest.TestCase, AuthenticatedHelper):
     def setUp(self):
         self.configure()
 
-    def test_create_duplicate(self):
-        found = None
-        for item in self.r.user.get_submitted():
-            if not item.is_self:
-                found = item
-                break
-        else:
-            self.fail('Could not find link post')
+    def test_create_duplicate_failure(self):
+        predicate = lambda item: not item.is_self
+        found = self.first(self.r.user.get_submitted(), predicate)
         self.assertRaises(errors.AlreadySubmitted, self.r.submit, self.sr,
                           found.title, url=found.url)
+
+    def test_create_duplicate_success(self):
+        predicate = lambda item: not item.is_self
+        found = self.first(self.r.user.get_submitted(), predicate)
+        submission = self.r.submit(self.sr, found.title, url=found.url,
+                                   resubmit=True)
+        self.assertEqual(submission.title, found.title)
+        self.assertEqual(submission.url, found.url)
 
     def test_create_link_through_subreddit(self):
         unique = uuid.uuid4()
@@ -1548,52 +1618,50 @@ class SubmissionEditTest(unittest.TestCase, AuthenticatedHelper):
             verify_undistinguish(submission)
 
     def test_edit_link(self):
-        found = None
-        for item in self.r.user.get_submitted():
-            if not item.is_self:
-                found = item
-                break
-        else:
-            self.fail('Could not find link post')
+        predicate = lambda item: not item.is_self
+        found = self.first(self.r.user.get_submitted(), predicate)
         self.assertRaises(HTTPError, found.edit, 'text')
 
     def test_edit_self(self):
-        found = None
-        for item in self.r.user.get_submitted():
-            if item.is_self:
-                found = item
-                break
-        else:
-            self.fail('Could not find self post')
+        predicate = lambda item: item.is_self
+        found = self.first(self.r.user.get_submitted(), predicate)
         new_body = '%s\n\n+Edit Text' % found.selftext
         found = found.edit(new_body)
         self.assertEqual(found.selftext, new_body)
 
-    def test_mark_as_nsfw(self):
+    def test_mark_as_nsfw_as_author(self):
         self.disable_cache()
-        found = None
-        for item in self.subreddit.get_top():
-            if not item.over_18:
-                found = item
-                break
+        self.r.login(self.other_non_mod_name, self.other_non_mod_pswd)
+        submission = self.r.get_submission(submission_id="1nt8co")
+        self.assertEqual(submission.author, self.r.user)
+        originally_nsfw = submission.over_18
+        if originally_nsfw:
+            submission.unmark_as_nsfw()
         else:
-            self.fail("Couldn't find a SFW submission")
-        found.mark_as_nsfw()
-        found.refresh()
-        self.assertTrue(found.over_18)
+            submission.mark_as_nsfw()
+        submission.refresh()
+        self.assertNotEqual(originally_nsfw, submission.over_18)
+
+    def test_mark_as_nsfw_as_mod(self):
+        self.disable_cache()
+        submission = self.r.get_submission(submission_id="1nt8co")
+        submission.mark_as_nsfw()
+        submission.refresh()
+        self.assertTrue(submission.over_18)
+
+    def test_mark_as_nsfw_exception(self):
+        self.disable_cache()
+        self.r.login(self.other_non_mod_name, self.other_non_mod_pswd)
+        predicate = lambda item: item.author != self.r.user
+        found = self.first(self.subreddit.get_top(), predicate)
+        self.assertRaises(errors.ModeratorOrScopeRequired, found.mark_as_nsfw)
 
     def test_unmark_as_nsfw(self):
         self.disable_cache()
-        found = None
-        for item in self.subreddit.get_top():
-            if item.over_18:
-                found = item
-                break
-        else:
-            self.fail("Couldn't find a NSFW submission")
-        found.unmark_as_nsfw()
-        found.refresh()
-        self.assertFalse(found.over_18)
+        submission = self.r.get_submission(submission_id="1nt8co")
+        submission.unmark_as_nsfw()
+        submission.refresh()
+        self.assertFalse(submission.over_18)
 
 
 class SubmissionTest(unittest.TestCase, AuthenticatedHelper):
@@ -1601,12 +1669,8 @@ class SubmissionTest(unittest.TestCase, AuthenticatedHelper):
         self.configure()
 
     def test_clear_vote(self):
-        submission = None
-        for submission in self.r.user.get_submitted():
-            if submission.likes is False:
-                break
-        else:
-            self.fail('Could not find a down-voted submission.')
+        predicate = lambda submission: submission.likes is False
+        submission = self.first(self.r.user.get_submitted(), predicate)
         submission.clear_vote()
         # reload the submission
         submission = self.r.get_submission(submission_id=submission.id)
@@ -1620,12 +1684,8 @@ class SubmissionTest(unittest.TestCase, AuthenticatedHelper):
         self.assertEqual(None, submission.author)
 
     def test_downvote(self):
-        submission = None
-        for submission in self.r.user.get_submitted():
-            if submission.likes is True:
-                break
-        else:
-            self.fail('Could not find an up-voted submission.')
+        predicate = lambda submission: submission.likes is True
+        submission = self.first(self.r.user.get_submitted(), predicate)
         submission.downvote()
         # reload the submission
         submission = self.r.get_submission(submission_id=submission.id)
@@ -1633,56 +1693,37 @@ class SubmissionTest(unittest.TestCase, AuthenticatedHelper):
 
     def test_hide(self):
         self.disable_cache()
-        found = None
-        for item in self.r.user.get_submitted():
-            if not item.hidden:
-                found = item
-                break
-        else:
-            self.fail("Couldn't find an unhidden submission")
-        found.hide()
-        found.refresh()
-        self.assertTrue(found.hidden)
+        predicate = lambda item: not item.hidden
+        submission = self.first(self.r.user.get_submitted(), predicate)
+        submission.hide()
+        submission.refresh()
+        self.assertTrue(submission.hidden)
 
     def test_report(self):
+        self.disable_cache()
         # login as new user to report submission
         oth = Reddit(USER_AGENT, disable_update_check=True)
-        oth.login('PyAPITestUser3', '1111')
+        oth.login(self.other_user_name, self.other_user_pswd)
         subreddit = oth.get_subreddit(self.sr)
-        submission = None
-        for submission in subreddit.get_new():
-            if not submission.hidden:
-                break
-        else:
-            self.fail('Could not find a non-reported submission.')
+        predicate = lambda submission: not submission.hidden
+        submission = self.first(subreddit.get_new(), predicate)
         submission.report()
         # check if submission was reported
-        for report in self.r.get_subreddit(self.sr).get_reports():
-            if report.id == submission.id:
-                break
-        else:
-            self.fail('Could not find reported submission.')
+        predicate = lambda report: report.id == submission.id
+        self.first(self.r.get_subreddit(self.sr).get_reports(), predicate)
 
     def test_save(self):
-        submission = None
-        for submission in self.r.user.get_submitted():
-            if not submission.saved:
-                break
-        else:
-            self.fail('Could not find unsaved submission.')
+        predicate = lambda submission: not submission.saved
+        submission = self.first(self.r.user.get_submitted(), predicate)
         submission.save()
         # reload the submission
         submission = self.r.get_submission(submission_id=submission.id)
         self.assertTrue(submission.saved)
         # verify in saved_links
-        for item in self.r.user.get_saved():
-            if item == submission:
-                break
-        else:
-            self.fail('Could not find submission in saved links.')
+        self.first(self.r.user.get_saved(), lambda item: item == submission)
 
     def test_short_link(self):
-        submission = six_next(self.r.get_new())
+        submission = next(self.r.get_new())
         if self.r.config.is_reddit:
             self.assertTrue(submission.id in submission.short_link)
         else:
@@ -1713,36 +1754,23 @@ class SubmissionTest(unittest.TestCase, AuthenticatedHelper):
 
     def test_unhide(self):
         self.disable_cache()
-        found = None
-        for item in self.r.user.get_submitted():
-            if item.hidden:
-                found = item
-                break
-        else:
-            self.fail("Couldn't find a hidden submission")
-        found.unhide()
-        found.refresh()
-        self.assertFalse(found.hidden)
+        predicate = lambda submission: submission.hidden
+        submission = self.first(self.r.user.get_submitted(), predicate)
+        submission.unhide()
+        submission.refresh()
+        self.assertFalse(submission.hidden)
 
     def test_unsave(self):
-        submission = None
-        for submission in self.r.user.get_submitted():
-            if submission.saved:
-                break
-        else:
-            self.fail('Could not find saved submission.')
+        predicate = lambda submission: submission.saved
+        submission = self.first(self.r.user.get_submitted(), predicate)
         submission.unsave()
         # reload the submission
         submission = self.r.get_submission(submission_id=submission.id)
         self.assertFalse(submission.saved)
 
     def test_upvote(self):
-        submission = None
-        for submission in self.r.user.get_submitted():
-            if submission.likes is None:
-                break
-        else:
-            self.fail('Could not find a non-voted submission.')
+        predicate = lambda submission: submission.likes is None
+        submission = self.first(self.r.user.get_submitted(), predicate)
         submission.upvote()
         # reload the submission
         submission = self.r.get_submission(submission_id=submission.id)
@@ -1757,19 +1785,26 @@ class SubredditTest(unittest.TestCase, AuthenticatedHelper):
     def test_attribute_error(self):
         self.assertRaises(AttributeError, getattr, self.subreddit, 'foo')
 
+    def test_get_contributors_private(self):
+        self.r.login(self.other_non_mod_name, self.other_non_mod_pswd)
+        private_sub = self.r.get_subreddit(self.priv_sr)
+        self.assertTrue(list(private_sub.get_contributors()))
+
+    def test_get_contributors_public(self):
+        self.assertTrue(list(self.subreddit.get_contributors()))
+
+    def test_get_contributors_public_exception(self):
+        self.r.login(self.other_non_mod_name, self.other_non_mod_pswd)
+        self.assertRaises(errors.ModeratorRequired,
+                          self.subreddit.get_contributors)
+
     def test_get_my_contributions(self):
-        for subreddit in self.r.get_my_contributions():
-            if text_type(subreddit) == self.sr:
-                break
-        else:
-            self.fail('Could not find contributed reddit in my_contributions.')
+        predicate = lambda subreddit: text_type(subreddit) == self.sr
+        self.first(self.r.get_my_contributions(), predicate)
 
     def test_get_my_moderation(self):
-        for subreddit in self.r.get_my_moderation():
-            if text_type(subreddit) == self.sr:
-                break
-        else:
-            self.fail('Could not find moderated reddit in my_moderation.')
+        predicate = lambda subreddit: text_type(subreddit) == self.sr
+        self.first(self.r.get_my_moderation(), predicate)
 
     def test_get_my_subreddits(self):
         for subreddit in self.r.get_my_subreddits():
@@ -1778,35 +1813,74 @@ class SubredditTest(unittest.TestCase, AuthenticatedHelper):
 
     @reddit_only
     def test_search(self):
-        self.assertTrue(len(list(self.subreddit.search('test'))) > 0)
+        self.assertTrue(list(self.subreddit.search('test')))
+
+    def test_get_subreddit_recommendations(self):
+        result = self.r.get_subreddit_recommendations('python')
+        self.assertTrue(result)
 
     def test_subscribe_and_verify(self):
         self.subreddit.subscribe()
-        for subreddit in self.r.get_my_subreddits():
-            if text_type(subreddit) == self.sr:
-                break
-        else:
-            self.fail('Could not find reddit in my subreddits.')
+        predicate = lambda subreddit: text_type(subreddit) == self.sr
+        self.first(self.r.get_my_subreddits(), predicate)
 
     def test_subscribe_by_name_and_verify(self):
         self.r.subscribe(self.sr)
-        for subreddit in self.r.get_my_subreddits():
-            if text_type(subreddit) == self.sr:
-                break
-        else:
-            self.fail('Could not find reddit in my subreddits.')
+        predicate = lambda subreddit: text_type(subreddit) == self.sr
+        self.first(self.r.get_my_subreddits(), predicate)
 
     def test_unsubscribe_and_verify(self):
         self.subreddit.unsubscribe()
-        for subreddit in self.r.get_my_subreddits():
-            if text_type(subreddit) == self.sr:
-                self.fail('Found reddit in my subreddits.')
+        pred = lambda subreddit: text_type(subreddit) != self.sr
+        self.assertTrue(all(pred(sub) for sub in self.r.get_my_subreddits()))
 
     def test_unsubscribe_by_name_and_verify(self):
         self.r.unsubscribe(self.sr)
-        for subreddit in self.r.get_my_subreddits():
-            if text_type(subreddit) == self.sr:
-                self.fail('Found reddit in my subreddits.')
+        pred = lambda subreddit: text_type(subreddit) != self.sr
+        self.assertTrue(all(pred(sub) for sub in self.r.get_my_subreddits()))
+
+
+class ToRedditListTest(unittest.TestCase, BasicHelper):
+    def setUp(self):
+        self.configure()
+
+    def test__to_reddit_list(self):
+        # pylint: disable-msg=W0212
+        output = internal._to_reddit_list('hello')
+        self.assertEquals('hello', output)
+
+    def test__to_reddit_list_with_list(self):
+        # pylint: disable-msg=W0212
+        output = internal._to_reddit_list(['hello'])
+        self.assertEqual('hello', output)
+
+    def test__to_reddit_list_with_empty_list(self):
+        # pylint: disable-msg=W0212
+        output = internal._to_reddit_list([])
+        self.assertEqual('', output)
+
+    def test__to_reddit_list_with_big_list(self):
+        # pylint: disable-msg=W0212
+        output = internal._to_reddit_list(['hello', 'world'])
+        self.assertEqual('hello,world', output)
+
+    def test__to_reddit_list_with_object(self):
+        obj = self.r.get_subreddit(self.sr)
+        # pylint: disable-msg=W0212
+        output = internal._to_reddit_list(obj)
+        self.assertEqual(self.sr, output)
+
+    def test__to_reddit_list_with_object_in_list(self):
+        obj = self.r.get_subreddit(self.sr)
+        # pylint: disable-msg=W0212
+        output = internal._to_reddit_list([obj])
+        self.assertEqual(self.sr, output)
+
+    def test__to_reddit_list_with_mix(self):
+        obj = self.r.get_subreddit(self.sr)
+        # pylint: disable-msg=W0212
+        output = internal._to_reddit_list([obj, 'hello'])
+        self.assertEqual("{0},{1}".format(self.sr, 'hello'), output)
 
 
 class WikiTests(unittest.TestCase, BasicHelper):
@@ -1815,7 +1889,7 @@ class WikiTests(unittest.TestCase, BasicHelper):
         self.subreddit = self.r.get_subreddit(self.sr)
 
     def test_edit_wiki_page(self):
-        self.r.login(self.un, '1111')
+        self.r.login(self.un, self.un_pswd)
         page = self.subreddit.get_wiki_page('index')
         content = 'Body: {0}'.format(uuid.uuid4())
         page.edit(content)
@@ -1829,10 +1903,14 @@ class WikiTests(unittest.TestCase, BasicHelper):
             text_type(self.r.get_wiki_page(self.sr, 'index')))
 
     def test_get_wiki_pages(self):
-        retval = self.subreddit.get_wiki_pages()
-        self.assertTrue(len(retval) > 0)
-        tmp = self.subreddit.get_wiki_page(retval[0].page).content_md
-        self.assertEqual(retval[0].content_md, tmp)
+        result = self.subreddit.get_wiki_pages()
+        self.assertTrue(result)
+        tmp = self.subreddit.get_wiki_page(result[0].page).content_md
+        self.assertEqual(result[0].content_md, tmp)
+
+    def test_revision_by(self):
+        self.assertTrue(any(x.revision_by for x in
+                            self.subreddit.get_wiki_pages()))
 
 
 if __name__ == '__main__':
