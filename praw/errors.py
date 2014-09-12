@@ -13,7 +13,7 @@
 # PRAW.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Error classes
+Error classes.
 
 Includes two main exceptions. ClientException, when something goes
 wrong on our end and APIExeception for when something goes wrong on the
@@ -231,6 +231,13 @@ class BadCSSName(APIException):
     """An exception to indicate a bad CSS name (such as invalid) was used."""
 
     ERROR_TYPE = 'BAD_CSS_NAME'
+
+
+class BadUsername(APIException):
+
+    """An exception to indicate an invalid username was used."""
+
+    ERROR_TYPE = 'BAD_USERNAME'
 
 
 class InvalidCaptcha(APIException):
