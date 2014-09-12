@@ -17,7 +17,6 @@
 from requests import Request
 import six
 import sys
-from warnings import warn
 from requests.compat import urljoin
 from praw.decorators import restrict_access
 from praw.errors import (InvalidSubreddit, OAuthException,
@@ -25,9 +24,9 @@ from praw.errors import (InvalidSubreddit, OAuthException,
                          RedirectException)
 
 
-def _get_section(subpath=''):
-    """Return function to generate various non-subreddit listings."""
-    def _section(self, sort='new', time='all', *args, **kwargs):
+def _get_redditor_listing(subpath=''):
+    """Return function to generate Redditor listings."""
+    def _listing(self, sort='new', time='all', *args, **kwargs):
         """Return a get_content generator for some RedditContentObject type.
 
         :param sort: Specify the sort order of the results if applicable.
@@ -43,10 +42,10 @@ def _get_section(subpath=''):
         kwargs['params'].setdefault('t', time)
         url = urljoin(self._url, subpath)  # pylint: disable-msg=W0212
         return self.reddit_session.get_content(url, *args, **kwargs)
-    return _section
+    return _listing
 
 
-def _get_sorter(subpath='', deprecated=False, **defaults):
+def _get_sorter(subpath='', **defaults):
     """Return function to generate specific subreddit Submission listings."""
     @restrict_access(scope='read')
     def _sorted(self, *args, **kwargs):
@@ -56,10 +55,6 @@ def _get_sorter(subpath='', deprecated=False, **defaults):
         :meth:`.get_content`. Note: the `url` parameter cannot be altered.
 
         """
-
-        if deprecated:
-            warn('Please use `{0}` instead'.format(deprecated),
-                 DeprecationWarning)
         if not kwargs.get('params'):
             kwargs['params'] = {}
         for key, value in six.iteritems(defaults):
@@ -69,15 +64,14 @@ def _get_sorter(subpath='', deprecated=False, **defaults):
     return _sorted
 
 
-def _modify_relationship(relationship, unlink=False, is_sub=False,
-                         deprecated=False):
+def _modify_relationship(relationship, unlink=False, is_sub=False):
     """Return a function for relationship modification.
 
     Used to support friending (user-to-user), as well as moderating,
     contributor creating, and banning (user-to-subreddit).
 
     """
-    # the API uses friend and unfriend to manage all of these relationships
+    # The API uses friend and unfriend to manage all of these relationships.
     url_key = 'unfriend' if unlink else 'friend'
 
     if relationship == 'friend':
@@ -86,13 +80,10 @@ def _modify_relationship(relationship, unlink=False, is_sub=False,
         access = {'scope': None, 'mod': True}
 
     @restrict_access(**access)
-    def do_relationship(thing, user):
-        if deprecated:
-            warn('Please use `{0}` instead'.format(deprecated),
-                 DeprecationWarning)
-
+    def do_relationship(thing, user, **kwargs):
         data = {'name': six.text_type(user),
                 'type': relationship}
+        data.update(kwargs)
         if is_sub:
             data['r'] = six.text_type(thing)
         else:
@@ -179,3 +170,18 @@ def _raise_response_exceptions(response):
         else:
             raise OAuthException(msg, response.url)
     response.raise_for_status()
+
+
+def _to_reddit_list(arg):
+    """Return an argument converted to a reddit-formatted list.
+
+    The returned format is a comma deliminated list. Each element is a string
+    representation of an object. Either given as a string or as an object that
+    is then converted to its string representation.
+    """
+    if (isinstance(arg, six.string_types)
+            or not (hasattr(arg, "__getitem__")
+                    or hasattr(arg, "__iter__"))):
+        return six.text_type(arg)
+    else:
+        return ','.join(six.text_type(a) for a in arg)
