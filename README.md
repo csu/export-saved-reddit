@@ -4,6 +4,7 @@ Exports saved Reddit posts into a HTML file that is ready to be imported into Go
 ## Requirements
 * Python 2.X
 * pip
+* git (recommended)
 
 ## Installation
 With git:
