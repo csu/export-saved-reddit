@@ -1,0 +1,5 @@
+praw==2.1.19
+requests==2.4.3
+six==1.8.0
+update-checker==0.10
+wsgiref==0.1.2
