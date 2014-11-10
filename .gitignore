@@ -1,3 +1,5 @@
+env/
+
 # private info
 AccountDetails.py
 *.html
