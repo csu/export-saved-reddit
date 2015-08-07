@@ -61,7 +61,7 @@ def main():
     for i in r.user.get_saved(limit=None, time='all'):
         if not hasattr(i, 'title'):
            i.title = i.link_title
-        export_csv += ("%s,%s,,%s\n" % (i.permalink.encode('utf-8'), i.title.encode('utf-8'), str(i.subreddit)))
+        export_csv += ("%s,%s,,%s\n" % (i.permalink.encode('utf-8'), i.title.encode('utf-8').replace(',',''), str(i.subreddit)))
     with open("export-saved.csv", "w") as f:
         f.write(export_csv)
     converter = Converter("export-saved.csv")
