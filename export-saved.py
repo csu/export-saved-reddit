@@ -69,7 +69,11 @@ def main():
     for i in r.user.get_saved(limit=None, time='all'):
         if not hasattr(i, 'title'):
            i.title = i.link_title
-        csv_rows.append([i.permalink.encode('utf-8'), i.title.encode('utf-8'),None, str(i.subreddit)])
+        try:
+            folder = str(i.subreddit)
+        except AttributeError:
+            folder = "None"
+        csv_rows.append([i.permalink.encode('utf-8'), i.title.encode('utf-8'),None, folder])
     
     # write csv using csv module
     with open("export-saved.csv", "w") as f:
