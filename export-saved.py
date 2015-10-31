@@ -56,7 +56,7 @@ class Converter():
         ifile = open('chrome-bookmarks.html', 'w')
         ifile.write(content)
 
-def main(csv_delimiter=','):
+def main():
     r = praw.Reddit(user_agent='export saved 1.0')
     r.login(AccountDetails.REDDIT_USERNAME, AccountDetails.REDDIT_PASSWORD)
     
