@@ -11,7 +11,9 @@ import sys
 from time import time
 
 import praw
+
 import AccountDetails
+
 
 ## Converter class from https://gist.github.com/raphaa/1327761
 class Converter():
@@ -55,15 +57,32 @@ class Converter():
         ifile.write(content)
 
 def main():
-    r = praw.Reddit(user_agent='Subot 1.0')
+    r = praw.Reddit(user_agent='export saved 1.0')
     r.login(AccountDetails.REDDIT_USERNAME, AccountDetails.REDDIT_PASSWORD)
-    export_csv = 'URL,Title,Selection,Folder\n'
+    
+    # csv setting
+    csv_fields = ['URL', 'Title', 'Selection', 'Folder']
+    csv_rows = []
+    delimiter = ','
+    
+    # filter saved item for link
     for i in r.user.get_saved(limit=None, time='all'):
         if not hasattr(i, 'title'):
            i.title = i.link_title
-        export_csv += ("%s,%s,,%s\n" % (i.permalink.encode('utf-8'), i.title.encode('utf-8'), str(i.subreddit)))
+        try:
+            folder = str(i.subreddit)
+        except AttributeError:
+            folder = "None"
+        csv_rows.append([i.permalink.encode('utf-8'), i.title.encode('utf-8'),None, folder])
+    
+    # write csv using csv module
     with open("export-saved.csv", "w") as f:
-        f.write(export_csv)
+        csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
+        csvwriter.writerow(csv_fields)
+        for row in csv_rows:
+            csvwriter.writerow(row)
+
+    # convert csv to bookmark
     converter = Converter("export-saved.csv")
     converter.convert()
     sys.exit(0)
