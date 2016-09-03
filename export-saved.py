@@ -77,8 +77,11 @@ def main():
 
     # login
     r = praw.Reddit(user_agent='export saved 1.0')
-    r.login(AccountDetails.REDDIT_USERNAME, AccountDetails.REDDIT_PASSWORD)
-    logging.debug('Login succesful')
+    r.login(
+        username=AccountDetails.REDDIT_USERNAME,
+        password=AccountDetails.REDDIT_PASSWORD,
+        disable_warning=True
+    )
 
     # csv setting
     csv_fields = ['URL', 'Title', 'Selection', 'Folder']
