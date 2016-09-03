@@ -82,6 +82,7 @@ def main():
         password=AccountDetails.REDDIT_PASSWORD,
         disable_warning=True
     )
+    logging.debug('Login succesful')
 
     # csv setting
     csv_fields = ['URL', 'Title', 'Selection', 'Folder']
