@@ -5,7 +5,9 @@ Christopher Su
 Exports saved Reddit posts into a HTML file that is ready to be imported into Google Chrome.
 '''
 
+import argparse
 import csv
+import logging
 import os
 import sys
 from time import time
@@ -56,21 +58,40 @@ class Converter():
         ifile = open('chrome-bookmarks.html', 'w')
         ifile.write(content)
 
+
 def main():
+    """main func."""
+    parser = argparse.ArgumentParser(
+        description=(
+            'Exports saved Reddit posts into a HTML file'
+            'that is ready to be imported into Google Chrome'
+        )
+    )
+    parser.add_argument("-v", "--verbose", help="increase output verbosity",
+                        action="store_true")
+    args = parser.parse_args()
+
+    # set logging config
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+
+    # login
     r = praw.Reddit(user_agent='export saved 1.0')
     r.login(
         username=AccountDetails.REDDIT_USERNAME,
         password=AccountDetails.REDDIT_PASSWORD,
         disable_warning=True
     )
-    
+    logging.debug('Login succesful')
+
     # csv setting
     csv_fields = ['URL', 'Title', 'Selection', 'Folder']
     csv_rows = []
     delimiter = ','
-    
+
     # filter saved item for link
-    for i in r.user.get_saved(limit=None, time='all'):
+    for idx, i in enumerate(r.user.get_saved(limit=None, time='all'), 1):
+        logging.debug('processing {}#'.format(idx))
         if not hasattr(i, 'title'):
            i.title = i.link_title
         try:
@@ -78,17 +99,20 @@ def main():
         except AttributeError:
             folder = "None"
         csv_rows.append([i.permalink.encode('utf-8'), i.title.encode('utf-8'),None, folder])
-    
+
     # write csv using csv module
     with open("export-saved.csv", "w") as f:
         csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
         csvwriter.writerow(csv_fields)
         for row in csv_rows:
             csvwriter.writerow(row)
+    logging.debug('csv written.')
 
     # convert csv to bookmark
     converter = Converter("export-saved.csv")
     converter.convert()
+    logging.debug('html written.')
+
     sys.exit(0)
 
 if __name__ == "__main__":
