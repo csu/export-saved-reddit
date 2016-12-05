@@ -4,7 +4,7 @@ Exports saved Reddit posts into a HTML file that is ready to be imported into Go
 ## Requirements
 * [Python 2.X](https://www.python.org/downloads/)
 * [pip](https://pip.pypa.io/en/stable/installing/)
-* git (recommended)
+* [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) (recommended)
 
 ## Installation
 
