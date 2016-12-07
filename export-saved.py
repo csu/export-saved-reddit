@@ -115,9 +115,13 @@ def main():
 
     # filter items for link
     for idx, i in enumerate(seq, 1):
-        logging.debug('processing {}#'.format(idx))
+        logging.debug('processing item #{}'.format(idx))
+
         if not hasattr(i, 'title'):
            i.title = i.link_title
+
+        logging.debug('title: {}'.format(i.title))
+
         try:
             folder = str(i.subreddit)
         except AttributeError:

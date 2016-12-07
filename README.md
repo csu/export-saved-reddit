@@ -2,12 +2,12 @@
 Exports saved Reddit posts into a HTML file that is ready to be imported into Google Chrome. Sorts items into folders by subreddit.
 
 ## Requirements
-* [Python 2.X](https://www.python.org/downloads/)
+* [Python 2.x](https://www.python.org/downloads/)
 * [pip](https://pip.pypa.io/en/stable/installing/)
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) (recommended)
 
 ## Installation
-First, make sure you have [Python 2.X](https://www.python.org/downloads/), [pip](https://pip.pypa.io/en/stable/installing/), and [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed on your machine.
+First, make sure you have [Python 2.x](https://www.python.org/downloads/), [pip](https://pip.pypa.io/en/stable/installing/), and [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed on your machine.
 
 Run the following in your command prompt to install:
 
