@@ -24,15 +24,19 @@ To install without git, [download the source code from GitHub](https://github.co
 
 ### Additional Options
 
-    usage: export-saved.py [-h] [-v] [-u]
+    usage: export-saved.py [-h] [-u USERNAME] [-p PASSWORD] [-v] [-up]
 
     Exports saved Reddit posts into a HTML filethat is ready to be imported into
     Google Chrome
 
     optional arguments:
-      -h, --help     show this help message and exit
-      -v, --verbose  increase output verbosity
-      -u, --upvoted  get upvoted posts instead of saved posts
+      -h, --help            show this help message and exit
+      -u USERNAME, --username USERNAME
+                            pass in username as argument
+      -p PASSWORD, --password PASSWORD
+                            pass in password as argument
+      -v, --verbose         increase output verbosity
+      -up, --upvoted        get upvoted posts instead of saved posts
 
 ## Help
 If you have any questions or comments, please [open an issue on GitHub](https://github.com/csu/export-saved-reddit/issues) or [contact me](https://christopher.su/about/).
