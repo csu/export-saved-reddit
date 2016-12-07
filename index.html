@@ -37,7 +37,7 @@
 <a id="requirements" class="anchor" href="#requirements" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Requirements</h2>
 
 <ul>
-<li><a href="https://www.python.org/downloads/">Python 2.X</a></li>
+<li><a href="https://www.python.org/downloads/">Python 2.x</a></li>
 <li><a href="https://pip.pypa.io/en/stable/installing/">pip</a></li>
 <li>
 <a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">git</a> (recommended)</li>
@@ -46,7 +46,7 @@
 <h2>
 <a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h2>
 
-<p>First, make sure you have <a href="https://www.python.org/downloads/">Python 2.X</a>, <a href="https://pip.pypa.io/en/stable/installing/">pip</a>, and <a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">git</a> installed on your machine.</p>
+<p>First, make sure you have <a href="https://www.python.org/downloads/">Python 2.x</a>, <a href="https://pip.pypa.io/en/stable/installing/">pip</a>, and <a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">git</a> installed on your machine.</p>
 
 <p>Run the following in your command prompt to install:</p>
 
@@ -57,8 +57,8 @@ pip install -r requirements.txt
 
 <p>To install without git, <a href="https://github.com/csu/export-saved-reddit/archive/master.zip">download the source code from GitHub</a>, extract the archive, and follow the steps above beginning from the second line.</p>
 
-<h1>
-<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h1>
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h2>
 
 <ol>
 <li>In the <code>export-saved-reddit</code> folder, rename the <code>AccountDetails.py.example</code> file to <code>AccountDetails.py</code>.</li>
@@ -66,8 +66,34 @@ pip install -r requirements.txt
 <li>Back in your shell, run <code>python export-saved.py</code> in the <code>export-saved-reddit</code> folder. This will run the export, which will create <code>chrome-bookmarks.html</code> and <code>export-saved.csv</code> files containing your data in the same folder.</li>
 </ol>
 
-<h1>
-<a id="help" class="anchor" href="#help" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Help</h1>
+<h3>
+<a id="additional-options" class="anchor" href="#additional-options" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Additional Options</h3>
+
+<pre><code>usage: export-saved.py [-h] [-u USERNAME] [-p PASSWORD] [-v] [-up]
+
+Exports saved Reddit posts into a HTML filethat is ready to be imported into
+Google Chrome
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -u USERNAME, --username USERNAME
+                        pass in username as argument
+  -p PASSWORD, --password PASSWORD
+                        pass in password as argument
+  -v, --verbose         increase output verbosity
+  -up, --upvoted        get upvoted posts instead of saved posts
+</code></pre>
+
+<h2>
+<a id="updating" class="anchor" href="#updating" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Updating</h2>
+
+<p>To update the script to the latest version, enter the <code>export-saved-reddit</code> folder in your shell/command prompt and enter the following:</p>
+
+<pre><code>git pull
+</code></pre>
+
+<h2>
+<a id="help" class="anchor" href="#help" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Help</h2>
 
 <p>If you have any questions or comments, please <a href="https://github.com/csu/export-saved-reddit/issues">open an issue on GitHub</a> or <a href="https://christopher.su/about/">contact me</a>.</p>
       </section>
