@@ -1,5 +1,5 @@
-# Export Saved
-Exports saved Reddit posts into a HTML file that is ready to be imported into Google Chrome. Sorts items into folders by subreddit.
+# Export Saved Reddit Posts
+Exports saved and/or upvoted Reddit posts into a HTML file that is ready to be imported into Google Chrome. Sorts items into folders by subreddit.
 
 ## Requirements
 * [Python 2.x](https://www.python.org/downloads/)
