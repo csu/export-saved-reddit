@@ -16,7 +16,6 @@ import praw
 
 import AccountDetails
 
-
 ## Converter class from https://gist.github.com/raphaa/1327761
 class Converter():
     """Converts a CSV instapaper export to a Chrome bookmark file."""
@@ -69,6 +68,8 @@ def main():
     )
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
                         action="store_true")
+    parser.add_argument("-u", "--upvoted", help="get upvoted posts instead of saved posts",
+                        action="store_true")
     args = parser.parse_args()
 
     # set logging config
@@ -89,8 +90,14 @@ def main():
     csv_rows = []
     delimiter = ','
 
-    # filter saved item for link
-    for idx, i in enumerate(r.user.get_saved(limit=None, time='all'), 1):
+    seq = None
+    if args.upvoted:
+        seq = r.user.get_upvoted(limit=None, time='all')
+    else:
+        seq = r.user.get_saved(limit=None, time='all')
+
+    # filter items for link
+    for idx, i in enumerate(seq, 1):
         logging.debug('processing {}#'.format(idx))
         if not hasattr(i, 'title'):
            i.title = i.link_title
