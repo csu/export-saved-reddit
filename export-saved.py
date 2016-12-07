@@ -14,8 +14,6 @@ from time import time
 
 import praw
 
-import AccountDetails
-
 ## Converter class from https://gist.github.com/raphaa/1327761
 class Converter():
     """Converts a CSV instapaper export to a Chrome bookmark file."""
@@ -66,9 +64,11 @@ def main():
             'that is ready to be imported into Google Chrome'
         )
     )
+    parser.add_argument("-u", "--username", help="pass in username as argument")
+    parser.add_argument("-p", "--password", help="pass in password as argument")
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
                         action="store_true")
-    parser.add_argument("-u", "--upvoted", help="get upvoted posts instead of saved posts",
+    parser.add_argument("-up", "--upvoted", help="get upvoted posts instead of saved posts",
                         action="store_true")
     args = parser.parse_args()
 
@@ -78,11 +78,28 @@ def main():
 
     # login
     r = praw.Reddit(user_agent='export saved 1.0')
+
+    username = None
+    password = None
+    if args.username and args.password:
+        username = args.username
+        password = args.password
+    else:
+        import AccountDetails
+        username = AccountDetails.REDDIT_USERNAME
+        password = AccountDetails.REDDIT_PASSWORD
+
+    if not username or not password:
+        print 'You must specify both a username and a password.'
+        print 'Either use the --username and --password options or add them to an AccountDetails module.'
+        exit(1)
+
     r.login(
-        username=AccountDetails.REDDIT_USERNAME,
-        password=AccountDetails.REDDIT_PASSWORD,
+        username=username,
+        password=password,
         disable_warning=True
     )
+
     logging.debug('Login succesful')
 
     # csv setting
