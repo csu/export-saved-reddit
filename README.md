@@ -38,5 +38,10 @@ To install without git, [download the source code from GitHub](https://github.co
       -v, --verbose         increase output verbosity
       -up, --upvoted        get upvoted posts instead of saved posts
 
+## Updating
+To update the script to the latest version, enter the `export-saved-reddit` folder in your shell/command prompt and enter the following:
+
+    git pull
+
 ## Help
 If you have any questions or comments, please [open an issue on GitHub](https://github.com/csu/export-saved-reddit/issues) or [contact me](https://christopher.su/about/).
