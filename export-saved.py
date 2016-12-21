@@ -17,10 +17,10 @@ import praw
 ## Converter class from https://gist.github.com/raphaa/1327761
 class Converter():
     """Converts a CSV instapaper export to a Chrome bookmark file."""
- 
+
     def __init__(self, file):
         self._file = file
- 
+
     def parse_urls(self):
         """Parses the file and returns a folder ordered list."""
         efile = open(self._file)
@@ -33,7 +33,7 @@ class Converter():
                 parsed_urls[folder] = []
             parsed_urls[folder].append([url[0], url[1]])
         return parsed_urls
- 
+
     def convert(self):
         """Converts the file."""
         urls = self.parse_urls()
@@ -120,7 +120,7 @@ def main():
         if not hasattr(i, 'title'):
            i.title = i.link_title
 
-        logging.debug('title: {}'.format(i.title))
+        logging.debug('title: {}'.format(i.title.encode('utf-8')))
 
         try:
             folder = str(i.subreddit)
