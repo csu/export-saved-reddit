@@ -2,7 +2,6 @@
 '''
 export-saved.py
 Christopher Su
-ported to python3 and changed to praw 4.3 by MoHD Email:M.hamza20@icloud.com
 Exports saved Reddit posts into a HTML file that is ready to be imported into Google Chrome.
 '''
 
