@@ -19,7 +19,7 @@ To install without git, [download the source code from GitHub](https://github.co
 
 ## Usage
 1. In the `export-saved-reddit` folder, rename the `AccountDetails.py.example` file to `AccountDetails.py`.
-2. Open the `AccountDetails.py` in a text editor and enter your Reddit username and password within the corresponding quotation marks. Save and close the file.
+2. Open the `AccountDetails.py` in a text editor and enter your Reddit username, password, client_id, client_secret within the corresponding quotation marks. Save and close the file.
 3. Back in your shell, run `python export-saved.py` in the `export-saved-reddit` folder. This will run the export, which will create `chrome-bookmarks.html` and `export-saved.csv` files containing your data in the same folder.
 
 ### Additional Options
