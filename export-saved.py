@@ -70,7 +70,7 @@ def main():
     parser.add_argument("-u", "--username", help="pass in username as argument")
     parser.add_argument("-p", "--password", help="pass in password as argument")
     parser.add_argument("-id", "--client_id", help="pass in client_id  as argument")
-    parser.add_argument("-secret", "--client_secret", help="pass in client_secret as argument")
+    parser.add_argument("-s", "--client_secret", help="pass in client_secret as argument")
 
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
                         action="store_true")
