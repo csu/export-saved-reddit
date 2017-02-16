@@ -63,19 +63,21 @@ def main():
     """main func."""
     parser = argparse.ArgumentParser(
         description=(
-            'Exports saved Reddit posts into a HTML file'
+            'Exports saved Reddit posts into a HTML file '
             'that is ready to be imported into Google Chrome'
         )
     )
+
     parser.add_argument("-u", "--username", help="pass in username as argument")
     parser.add_argument("-p", "--password", help="pass in password as argument")
-    parser.add_argument("-id", "--client_id", help="pass in client_id  as argument")
-    parser.add_argument("-s", "--client_secret", help="pass in client_secret as argument")
+    parser.add_argument("-id", "--client-id", help="pass in client id  as argument")
+    parser.add_argument("-s", "--client-secret", help="pass in client secret as argument")
 
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
                         action="store_true")
     parser.add_argument("-up", "--upvoted", help="get upvoted posts instead of saved posts",
                         action="store_true")
+
     args = parser.parse_args()
 
     # set logging config
@@ -96,8 +98,8 @@ def main():
         import AccountDetails
         username = AccountDetails.REDDIT_USERNAME
         password = AccountDetails.REDDIT_PASSWORD
-        client_id = AccountDetails.client_id
-        client_secret = AccountDetails.client_secret
+        client_id = AccountDetails.CLIENT_ID
+        client_secret = AccountDetails.CLIENT_SECRET
 
 
     if not username or not password or not client_id or not client_secret :
