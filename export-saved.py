@@ -124,7 +124,7 @@ def main():
     if args.upvoted:
         seq = reddit.user.get_upvoted(limit=None, time='all')
     else:
-        seq = reddit.redditor(username).saved()
+        seq = reddit.redditor(username).saved(limit=None)
 
     # filter items for link
     for idx, i in enumerate(seq, 1):
