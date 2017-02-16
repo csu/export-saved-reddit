@@ -2,12 +2,12 @@
 Exports saved and/or upvoted Reddit posts into a HTML file that is ready to be imported into Google Chrome. Sorts items into folders by subreddit.
 
 ## Requirements
-* [Python 2.x](https://www.python.org/downloads/)
+* [Python 3.x](https://www.python.org/downloads/)
 * [pip](https://pip.pypa.io/en/stable/installing/)
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) (recommended)
 
 ## Installation
-First, make sure you have [Python 2.x](https://www.python.org/downloads/), [pip](https://pip.pypa.io/en/stable/installing/), and [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed on your machine.
+First, make sure you have [Python 3.x](https://www.python.org/downloads/), [pip](https://pip.pypa.io/en/stable/installing/), and [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed on your machine.
 
 Run the following in your command prompt to install:
 
@@ -18,9 +18,10 @@ Run the following in your command prompt to install:
 To install without git, [download the source code from GitHub](https://github.com/csu/export-saved-reddit/archive/master.zip), extract the archive, and follow the steps above beginning from the second line.
 
 ## Usage
-1. In the `export-saved-reddit` folder, rename the `AccountDetails.py.example` file to `AccountDetails.py`.
-2. Open the `AccountDetails.py` in a text editor and enter your Reddit username and password within the corresponding quotation marks. Save and close the file.
-3. Back in your shell, run `python export-saved.py` in the `export-saved-reddit` folder. This will run the export, which will create `chrome-bookmarks.html` and `export-saved.csv` files containing your data in the same folder.
+1. make a new reddit app from https://www.reddit.com/prefs/apps 
+2. In the `export-saved-reddit` folder, rename the `AccountDetails.py.example` file to `AccountDetails.py`.
+3. Open the `AccountDetails.py` in a text editor and enter your Reddit username, password, client_id, client_secret within the corresponding quotation marks. Save and close the file.
+4. Back in your shell, run `python export-saved.py` in the `export-saved-reddit` folder. This will run the export, which will create `chrome-bookmarks.html` and `export-saved.csv` files containing your data in the same folder.
 
 ### Additional Options
 
@@ -35,6 +36,12 @@ To install without git, [download the source code from GitHub](https://github.co
                             pass in username as argument
       -p PASSWORD, --password PASSWORD
                             pass in password as argument
+      -id clientID,--client_id clientID
+                            pass in clientID as argument
+      -s clientsecret, --client_secret clientsecret
+                            pass in client_secret as argument
+    
+                             
       -v, --verbose         increase output verbosity
       -up, --upvoted        get upvoted posts instead of saved posts
 
