@@ -26,10 +26,13 @@ class Converter():
         efile = open(self._file)
         urls = csv.reader(efile, dialect='excel')
         parsed_urls = {}
-        urls.next()
+        next(urls)
         for url in urls:
-            folder = url[3].strip()
-            if folder not in parsed_urls.keys():
+            if not url:
+                continue
+            else:
+                folder = url[3].strip()
+            if folder not in list(parsed_urls.keys()):
                 parsed_urls[folder] = []
             parsed_urls[folder].append([url[0], url[1]])
         return parsed_urls
@@ -44,7 +47,7 @@ class Converter():
                    '\n<H1>Bookmarks</H1>\n<DL><P>\n<DT><H3 ADD_DATE="%(t)d"'
                    ' LAST_MODIFIED="%(t)d">Reddit</H3>'
                    '\n<DL><P>\n' % {'t': t})
-        for folder in urls.keys():
+        for folder in list(urls.keys()):
             content += ('<DT><H3 ADD_DATE="%(t)d" LAST_MODIFIED="%(t)d">%(n)s'
                         '</H3>\n<DL><P>\n' % {'t': t, 'n': folder})
             for url in urls[folder]:
@@ -66,6 +69,9 @@ def main():
     )
     parser.add_argument("-u", "--username", help="pass in username as argument")
     parser.add_argument("-p", "--password", help="pass in password as argument")
+    parser.add_argument("-id", "--client_id", help="pass in client_id  as argument")
+    parser.add_argument("-s", "--client_secret", help="pass in client_secret as argument")
+
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
                         action="store_true")
     parser.add_argument("-up", "--upvoted", help="get upvoted posts instead of saved posts",
@@ -77,28 +83,33 @@ def main():
         logging.basicConfig(level=logging.DEBUG)
 
     # login
-    r = praw.Reddit(user_agent='export saved 1.0')
-
     username = None
     password = None
-    if args.username and args.password:
+    client_id = None
+    client_secret = None
+    if args.username and args.password and args.client_id and args.client_secret:
         username = args.username
         password = args.password
+        client_id = args.client_id
+        client_secret = args.client_secret
     else:
         import AccountDetails
         username = AccountDetails.REDDIT_USERNAME
         password = AccountDetails.REDDIT_PASSWORD
+        client_id = AccountDetails.client_id
+        client_secret = AccountDetails.client_secret
 
-    if not username or not password:
-        print 'You must specify both a username and a password.'
-        print 'Either use the --username and --password options or add them to an AccountDetails module.'
+
+    if not username or not password or not client_id or not client_secret :
+        print('You must specify ALL the arguments')
+        print('Either use the options (write [-h] for help menu) or add them to an AccountDetails module.')
         exit(1)
 
-    r.login(
-        username=username,
-        password=password,
-        disable_warning=True
-    )
+    reddit = praw.Reddit(client_id=client_id,
+                         client_secret=client_secret,
+                         user_agent='export saved 2.0',
+                         username=username,
+                         password=password)
 
     logging.debug('Login succesful')
 
@@ -109,9 +120,9 @@ def main():
 
     seq = None
     if args.upvoted:
-        seq = r.user.get_upvoted(limit=None, time='all')
+        seq = reddit.user.get_upvoted(limit=None, time='all')
     else:
-        seq = r.user.get_saved(limit=None, time='all')
+        seq = reddit.redditor(username).saved()
 
     # filter items for link
     for idx, i in enumerate(seq, 1):
@@ -121,12 +132,12 @@ def main():
            i.title = i.link_title
 
         logging.debug('title: {}'.format(i.title.encode('utf-8')))
-
         try:
             folder = str(i.subreddit)
         except AttributeError:
             folder = "None"
-        csv_rows.append([i.permalink.encode('utf-8'), i.title.encode('utf-8'),None, folder])
+        csv_rows.append([i.permalink, i.title.encode('utf-8'),None, folder])
+
 
     # write csv using csv module
     with open("export-saved.csv", "w") as f:
