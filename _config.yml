@@ -1,0 +1,8 @@
+title: export-saved-reddit
+description: Exports saved Reddit posts into a HTML file that is ready to be imported into Google Chrome.
+google_analytics: UA-34248999-1
+show_downloads: true
+theme: jekyll-theme-minimal
+
+gems:
+  - jekyll-mentions
