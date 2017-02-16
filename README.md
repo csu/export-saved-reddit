@@ -18,9 +18,14 @@ Run the following in your command prompt to install:
 To install without git, [download the source code from GitHub](https://github.com/csu/export-saved-reddit/archive/master.zip), extract the archive, and follow the steps above beginning from the second line.
 
 ## Usage
-1. make a new reddit app from https://www.reddit.com/prefs/apps 
+1. [Make a new Reddit](https://www.reddit.com/prefs/apps) app to get a `client id` and a `client secret`.
+
+    - Scroll to the bottom of the page and click "create app"
+    - You can name the app anything (e.g. "export-saved"). Select the "script" option. Put anything for the redirect URI (e.g. https://christopher.su).
+    - After creating the app, the client id will appear under the app name while the client secret will be labeled "secret".
+
 2. In the `export-saved-reddit` folder, rename the `AccountDetails.py.example` file to `AccountDetails.py`.
-3. Open the `AccountDetails.py` in a text editor and enter your Reddit username, password, client_id, client_secret within the corresponding quotation marks. Save and close the file.
+3. Open the `AccountDetails.py` in a text editor and enter your Reddit username, password, client id, client secret within the corresponding quotation marks. Save and close the file.
 4. Back in your shell, run `python export-saved.py` in the `export-saved-reddit` folder. This will run the export, which will create `chrome-bookmarks.html` and `export-saved.csv` files containing your data in the same folder.
 
 ### Additional Options
@@ -36,14 +41,13 @@ To install without git, [download the source code from GitHub](https://github.co
                             pass in username as argument
       -p PASSWORD, --password PASSWORD
                             pass in password as argument
-      -id clientID,--client_id clientID
-                            pass in clientID as argument
-      -s clientsecret, --client_secret clientsecret
-                            pass in client_secret as argument
-    
-                             
+      -id CLIENT_ID, --client-id CLIENT_ID
+                            pass in client id as argument
+      -s CLIENT_SECRET, --client-secret CLIENT_SECRET
+                            pass in client secret as argument
       -v, --verbose         increase output verbosity
       -up, --upvoted        get upvoted posts instead of saved posts
+
 
 ## Updating
 To update the script to the latest version, enter the `export-saved-reddit` folder in your shell/command prompt and enter the following:
