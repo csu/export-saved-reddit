@@ -1,28 +1,30 @@
 #!/usr/bin/env python
-'''
+"""
 export-saved.py
+
 Christopher Su
 Exports saved Reddit posts into a HTML file that is ready to be imported into Google Chrome.
-'''
+"""
 
+from time import time
 import argparse
 import csv
 import logging
-import os
 import sys
-from time import time
 
 import praw
 
-## Converter class from https://gist.github.com/raphaa/1327761
+
+# # Converter class from https://gist.github.com/raphaa/1327761
 class Converter():
     """Converts a CSV instapaper export to a Chrome bookmark file."""
 
     def __init__(self, file):
+        """init method."""
         self._file = file
 
     def parse_urls(self):
-        """Parses the file and returns a folder ordered list."""
+        """Parse the file and returns a folder ordered list."""
         efile = open(self._file)
         urls = csv.reader(efile, dialect='excel')
         parsed_urls = {}
@@ -38,7 +40,7 @@ class Converter():
         return parsed_urls
 
     def convert(self):
-        """Converts the file."""
+        """Convert the file."""
         urls = self.parse_urls()
         t = int(time())
         content = ('<!DOCTYPE NETSCAPE-Bookmark-file-1>\n'
@@ -47,7 +49,7 @@ class Converter():
                    '\n<H1>Bookmarks</H1>\n<DL><P>\n<DT><H3 ADD_DATE="%(t)d"'
                    ' LAST_MODIFIED="%(t)d">Reddit</H3>'
                    '\n<DL><P>\n' % {'t': t})
-        for folder in list(urls.keys()):
+        for folder in sorted(list(urls.keys())):
             content += ('<DT><H3 ADD_DATE="%(t)d" LAST_MODIFIED="%(t)d">%(n)s'
                         '</H3>\n<DL><P>\n' % {'t': t, 'n': folder})
             for url in urls[folder]:
@@ -59,8 +61,15 @@ class Converter():
         ifile.write(content)
 
 
-def main():
-    """main func."""
+def get_args(argv):
+    """get args.
+
+    Args:
+        argv (list): List of arguments.
+
+    Returns:
+        argparse.Namespace: Parsed arguments.
+    """
     parser = argparse.ArgumentParser(
         description=(
             'Exports saved Reddit posts into a HTML file '
@@ -78,13 +87,19 @@ def main():
     parser.add_argument("-up", "--upvoted", help="get upvoted posts instead of saved posts",
                         action="store_true")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    return args
 
-    # set logging config
-    if args.verbose:
-        logging.basicConfig(level=logging.DEBUG)
 
-    # login
+def login(args):
+    """login.
+
+    Args:
+        args (argparse.Namespace): Parsed arguments.
+
+    Returns:
+        Reddit object instance.
+    """
     username = None
     password = None
     client_id = None
@@ -101,45 +116,58 @@ def main():
         client_id = AccountDetails.CLIENT_ID
         client_secret = AccountDetails.CLIENT_SECRET
 
-
-    if not username or not password or not client_id or not client_secret :
+    if not username or not password or not client_id or not client_secret:
         print('You must specify ALL the arguments')
-        print('Either use the options (write [-h] for help menu) or add them to an AccountDetails module.')
+        print(
+            'Either use the options (write [-h] for help menu) '
+            'or add them to an AccountDetails module.'
+        )
         exit(1)
+    return {
+        'username': username,
+        'password': password,
+        'client_id': client_id,
+        'client_secret': client_secret,
+    }
 
-    reddit = praw.Reddit(client_id=client_id,
-                         client_secret=client_secret,
-                         user_agent='export saved 2.0',
-                         username=username,
-                         password=password)
 
-    logging.debug('Login succesful')
+def get_csv_rows(seq):
+    """get csv rows.
 
-    # csv setting
-    csv_fields = ['URL', 'Title', 'Selection', 'Folder']
+    Args:
+        seq (list): List of Reddit item.
+
+    Returns:
+        list: Parsed reddit item.
+    """
     csv_rows = []
-    delimiter = ','
-
-    seq = None
-    if args.upvoted:
-        seq = reddit.user.get_upvoted(limit=None, time='all')
-    else:
-        seq = reddit.redditor(username).saved(limit=None)
 
     # filter items for link
     for idx, i in enumerate(seq, 1):
         logging.debug('processing item #{}'.format(idx))
 
         if not hasattr(i, 'title'):
-           i.title = i.link_title
+            i.title = i.link_title
 
         logging.debug('title: {}'.format(i.title.encode('utf-8')))
         try:
             folder = str(i.subreddit)
         except AttributeError:
             folder = "None"
-        csv_rows.append([i.permalink, i.title.encode('utf-8'),None, folder])
+        csv_rows.append([i.permalink, i.title.encode('utf-8'), None, folder])
 
+    return csv_rows
+
+
+def write_csv(csv_rows):
+    """write csv using csv module.
+
+    Args:
+        csv_rows (list): CSV rows.
+    """
+    # csv setting
+    csv_fields = ['URL', 'Title', 'Selection', 'Folder']
+    delimiter = ','
 
     # write csv using csv module
     with open("export-saved.csv", "w") as f:
@@ -147,6 +175,39 @@ def main():
         csvwriter.writerow(csv_fields)
         for row in csv_rows:
             csvwriter.writerow(row)
+
+
+def main():
+    """main func."""
+    args = get_args(sys.argv[1:])
+
+    # set logging config
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+
+    # login
+    account = login(args=args)
+    client_id = account['client_id']
+    client_secret = account['client_secret']
+    username = account['username']
+    password = account['password']
+    reddit = praw.Reddit(client_id=client_id,
+                         client_secret=client_secret,
+                         user_agent='export saved 2.0',
+                         username=username,
+                         password=password)
+    logging.debug('Login succesful')
+
+    seq = None
+    if args.upvoted:
+        seq = reddit.user.get_upvoted(limit=None, time='all')
+    else:
+        seq = reddit.redditor(username).saved(limit=None)
+
+    csv_rows = get_csv_rows(seq)
+
+    # write csv using csv module
+    write_csv(csv_rows)
     logging.debug('csv written.')
 
     # convert csv to bookmark
@@ -155,6 +216,7 @@ def main():
     logging.debug('html written.')
 
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
