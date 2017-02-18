@@ -7,5 +7,5 @@ install:
 script:
  - "python -m flake8 ./export_saved.py"
  - "python -m pytest -v ./tests"
-#after_success:
-  #- bash <(curl -s https://codecov.io/bash)
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
