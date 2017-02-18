@@ -1,4 +1,5 @@
 env/
+.cache/
 
 # private info
 AccountDetails.py
