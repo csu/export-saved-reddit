@@ -57,7 +57,7 @@ To update the script to the latest version, enter the `export-saved-reddit` fold
 ## Help
 If you have any questions or comments, please [open an issue on GitHub](https://github.com/csu/export-saved-reddit/issues) or [contact me](https://christopher.su/about/).
 
-## Contributing
+## [Contributing](https://github.com/csu/export-saved-reddit/blob/master/CONTRIBUTORS.md)
 [![Build Status](https://travis-ci.org/csu/export-saved-reddit.svg?branch=master)](https://travis-ci.org/csu/export-saved-reddit)
 
 If you would like to contribute, check out the project's [open issues](https://github.com/csu/export-saved-reddit/issues). [Pull requests](https://github.com/csu/export-saved-reddit/pulls) are welcome.
