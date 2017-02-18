@@ -110,11 +110,20 @@ def login(args):
         client_id = args.client_id
         client_secret = args.client_secret
     else:
-        import AccountDetails
-        username = AccountDetails.REDDIT_USERNAME
-        password = AccountDetails.REDDIT_PASSWORD
-        client_id = AccountDetails.CLIENT_ID
-        client_secret = AccountDetails.CLIENT_SECRET
+        try:
+            import AccountDetails
+            username = AccountDetails.REDDIT_USERNAME
+            password = AccountDetails.REDDIT_PASSWORD
+            client_id = AccountDetails.CLIENT_ID
+            client_secret = AccountDetails.CLIENT_SECRET
+        except ImportError:
+            print(
+                'You must specify a username, password, client id, '
+                'and client secret, either in an AccountDetails file '
+                'or by passing them as arguments (run the script with '
+                'the --help flag for more info).'
+            )
+            exit(1)
 
     if not username or not password or not client_id or not client_secret:
         print('You must specify ALL the arguments')
