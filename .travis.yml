@@ -6,6 +6,6 @@ install:
   - pip3 install -r ./requirements-dev.txt
 script:
  - "python -m flake8 ./export_saved.py"
- - "python -m pytest -v ./tests"
+ - "python -m pytest -v ./tests/ --cov=export_saved"
 after_success:
   - bash <(curl -s https://codecov.io/bash)

@@ -1,5 +1,6 @@
 env/
 .cache/
+.coverage
 
 # private info
 AccountDetails.py
