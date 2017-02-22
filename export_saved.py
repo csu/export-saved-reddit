@@ -158,12 +158,14 @@ def get_csv_rows(seq):
         if not hasattr(i, 'title'):
             i.title = i.link_title
 
-        logging.debug('title: {}'.format(i.title.encode('utf-8')))
+        # Fix possible buggy utf-8
+        title = i.title.encode('utf-8').decode('utf-8')
+        logging.debug('title: {}'.format(title))
         try:
             folder = str(i.subreddit)
         except AttributeError:
             folder = "None"
-        csv_rows.append([i.permalink, i.title.encode('utf-8'), None, folder])
+        csv_rows.append([i.permalink, title, None, folder])
 
     return csv_rows
 
