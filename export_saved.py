@@ -209,7 +209,7 @@ def main():
 
     seq = None
     if args.upvoted:
-        seq = reddit.user.get_upvoted(limit=None, time='all')
+        seq = reddit.redditor(username).upvoted(limit=None)
     else:
         seq = reddit.redditor(username).saved(limit=None)
 
