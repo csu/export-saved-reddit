@@ -87,6 +87,8 @@ def get_args(argv):
                         action="store_true")
     parser.add_argument("-up", "--upvoted", help="get upvoted posts instead of saved posts",
                         action="store_true")
+    parser.add_argument("-all", "--all", help="get upvoted, saved, comments and submissions",
+                        action="store_true")
 
     args = parser.parse_args(argv)
     return args
@@ -269,6 +271,11 @@ def main():
     reddit = login(args=args)
     if args.upvoted:
         save_upvoted(reddit)
+    elif args.all:
+        save_upvoted(reddit)
+        save_saved(reddit)
+        save_submissions(reddit)
+        save_comments(reddit)
     else:
         save_saved(reddit)
 
