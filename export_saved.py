@@ -165,7 +165,11 @@ def get_csv_rows(seq):
             folder = str(i.subreddit)
         except AttributeError:
             folder = "None"
-        csv_rows.append([i.permalink, title, None, folder])
+        if callable(i.permalink):
+            permalink = i.permalink()
+        else:
+            permalink = i.permalink
+        csv_rows.append([permalink, title, None, folder])
 
     return csv_rows
 
