@@ -19,9 +19,10 @@ import praw
 class Converter():
     """Converts a CSV instapaper export to a Chrome bookmark file."""
 
-    def __init__(self, file):
+    def __init__(self, file, html_file=None):
         """init method."""
         self._file = file
+        self._html_file = html_file if html_file is not None else 'chrome-bookmarks.html'
 
     def parse_urls(self):
         """Parse the file and returns a folder ordered list."""
@@ -57,7 +58,7 @@ class Converter():
                             % (url[0], t, url[1]))
             content += '</DL><P>\n'
         content += '</DL><P>\n' * 3
-        ifile = open('chrome-bookmarks.html', 'w')
+        ifile = open(self._html_file, 'w')
         ifile.write(content)
 
 
@@ -174,18 +175,19 @@ def get_csv_rows(seq):
     return csv_rows
 
 
-def write_csv(csv_rows):
+def write_csv(csv_rows, file_name):
     """write csv using csv module.
 
     Args:
         csv_rows (list): CSV rows.
+        file_name (string): filename written
     """
     # csv setting
     csv_fields = ['URL', 'Title', 'Selection', 'Folder']
     delimiter = ','
 
     # write csv using csv module
-    with open("export-saved.csv", "w") as f:
+    with open(file_name, "w") as f:
         csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
         csvwriter.writerow(csv_fields)
         for row in csv_rows:
@@ -222,11 +224,12 @@ def main():
     csv_rows = get_csv_rows(seq)
 
     # write csv using csv module
-    write_csv(csv_rows)
+    write_csv(csv_rows, "export-saved.csv")
     logging.debug('csv written.')
 
     # convert csv to bookmark
-    converter = Converter("export-saved.csv")
+    converter = Converter("export-saved.csv", "chrome-bookmarks.html")
+
     converter.convert()
     logging.debug('html written.')
 
