@@ -194,6 +194,23 @@ def write_csv(csv_rows, file_name):
             csvwriter.writerow(row)
 
 
+def process(seq, file_name):
+    """Write csv and html from a list of results.
+
+    Args:
+      seq (list): list to write
+      file_name: base file name without extension
+    """
+    csv_rows = get_csv_rows(seq)
+    # write csv using csv module
+    write_csv(csv_rows, file_name + ".csv")
+    logging.debug('csv written.')
+    # convert csv to bookmark
+    converter = Converter(file_name + ".csv", file_name + ".html")
+    converter.convert()
+    logging.debug('html written.')
+
+
 def main():
     """main func."""
     args = get_args(sys.argv[1:])
@@ -218,20 +235,10 @@ def main():
     seq = None
     if args.upvoted:
         seq = reddit.redditor(username).upvoted(limit=None)
+        process(seq, "export-saved")
     else:
         seq = reddit.redditor(username).saved(limit=None)
-
-    csv_rows = get_csv_rows(seq)
-
-    # write csv using csv module
-    write_csv(csv_rows, "export-saved.csv")
-    logging.debug('csv written.')
-
-    # convert csv to bookmark
-    converter = Converter("export-saved.csv", "chrome-bookmarks.html")
-
-    converter.convert()
-    logging.debug('html written.')
+        process(seq, "export-upvoted")
 
     sys.exit(0)
 
