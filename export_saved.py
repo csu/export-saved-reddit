@@ -93,13 +93,36 @@ def get_args(argv):
 
 
 def login(args):
-    """login.
+    """login method.
+
+    Args:
+        args (argparse.Namespace): Parsed arguments.
+
+    Returns: a logged on praw instance
+    """
+    # login
+    account = account_details(args=args)
+    client_id = account['client_id']
+    client_secret = account['client_secret']
+    username = account['username']
+    password = account['password']
+    reddit = praw.Reddit(client_id=client_id,
+                         client_secret=client_secret,
+                         user_agent='export saved 2.0',
+                         username=username,
+                         password=password)
+    logging.debug('Login succesful')
+    return reddit
+
+
+def account_details(args):
+    """Extract account informations.
 
     Args:
         args (argparse.Namespace): Parsed arguments.
 
     Returns:
-        Reddit object instance.
+        Account details
     """
     username = None
     password = None
@@ -211,6 +234,30 @@ def process(seq, file_name):
     logging.debug('html written.')
 
 
+def save_upvoted(reddit):
+    """ save upvoted posts """
+    seq = reddit.user.me().upvoted(limit=None)
+    process(seq, "export-upvoted")
+
+
+def save_saved(reddit):
+    """ save saved posts """
+    seq = reddit.user.me().saved(limit=None)
+    process(seq, "export-saved")
+
+
+def save_comments(reddit):
+    """ save comments posts """
+    seq = reddit.user.me().comments.new(limit=None)
+    process(seq, "export-comments")
+
+
+def save_submissions(reddit):
+    """ save saved posts """
+    seq = reddit.user.me().submissions.new(limit=None)
+    process(seq, "export-submissions")
+
+
 def main():
     """main func."""
     args = get_args(sys.argv[1:])
@@ -219,26 +266,11 @@ def main():
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
 
-    # login
-    account = login(args=args)
-    client_id = account['client_id']
-    client_secret = account['client_secret']
-    username = account['username']
-    password = account['password']
-    reddit = praw.Reddit(client_id=client_id,
-                         client_secret=client_secret,
-                         user_agent='export saved 2.0',
-                         username=username,
-                         password=password)
-    logging.debug('Login succesful')
-
-    seq = None
+    reddit = login(args=args)
     if args.upvoted:
-        seq = reddit.redditor(username).upvoted(limit=None)
-        process(seq, "export-saved")
+        save_upvoted(reddit)
     else:
-        seq = reddit.redditor(username).saved(limit=None)
-        process(seq, "export-upvoted")
+        save_saved(reddit)
 
     sys.exit(0)
 
