@@ -166,16 +166,18 @@ def account_details(args):
     }
 
 
-def get_csv_rows(seq):
+def get_csv_rows(reddit, seq):
     """get csv rows.
 
     Args:
+        reddit: reddit praw's instance
         seq (list): List of Reddit item.
 
     Returns:
         list: Parsed reddit item.
     """
     csv_rows = []
+    reddit_url = reddit.config.reddit_url
 
     # filter items for link
     for idx, i in enumerate(seq, 1):
@@ -195,7 +197,7 @@ def get_csv_rows(seq):
             permalink = i.permalink()
         else:
             permalink = i.permalink
-        csv_rows.append([permalink, title, None, folder])
+        csv_rows.append([reddit_url + permalink, title, None, folder])
 
     return csv_rows
 
@@ -219,14 +221,15 @@ def write_csv(csv_rows, file_name):
             csvwriter.writerow(row)
 
 
-def process(seq, file_name):
+def process(reddit, seq, file_name):
     """Write csv and html from a list of results.
 
     Args:
+      reddit: reddit praw's instance
       seq (list): list to write
       file_name: base file name without extension
     """
-    csv_rows = get_csv_rows(seq)
+    csv_rows = get_csv_rows(reddit, seq)
     # write csv using csv module
     write_csv(csv_rows, file_name + ".csv")
     logging.debug('csv written.')
@@ -239,25 +242,25 @@ def process(seq, file_name):
 def save_upvoted(reddit):
     """ save upvoted posts """
     seq = reddit.user.me().upvoted(limit=None)
-    process(seq, "export-upvoted")
+    process(reddit, seq, "export-upvoted")
 
 
 def save_saved(reddit):
     """ save saved posts """
     seq = reddit.user.me().saved(limit=None)
-    process(seq, "export-saved")
+    process(reddit, seq, "export-saved")
 
 
 def save_comments(reddit):
     """ save comments posts """
     seq = reddit.user.me().comments.new(limit=None)
-    process(seq, "export-comments")
+    process(reddit, seq, "export-comments")
 
 
 def save_submissions(reddit):
     """ save saved posts """
     seq = reddit.user.me().submissions.new(limit=None)
-    process(seq, "export-submissions")
+    process(reddit, seq, "export-submissions")
 
 
 def main():
