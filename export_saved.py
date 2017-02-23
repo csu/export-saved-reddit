@@ -19,10 +19,11 @@ import praw
 class Converter():
     """Converts a CSV instapaper export to a Chrome bookmark file."""
 
-    def __init__(self, file, html_file=None):
+    def __init__(self, file, html_file=None, folder_name="Reddit"):
         """init method."""
         self._file = file
         self._html_file = html_file if html_file is not None else 'chrome-bookmarks.html'
+        self._folder_name = folder_name if folder_name is not None else 'Reddit'
 
     def parse_urls(self):
         """Parse the file and returns a folder ordered list."""
@@ -48,8 +49,9 @@ class Converter():
                    '<META HTTP-EQUIV="Content-Type" CONTENT="text/html;'
                    ' charset=UTF-8">\n<TITLE>Bookmarks</TITLE>'
                    '\n<H1>Bookmarks</H1>\n<DL><P>\n<DT><H3 ADD_DATE="%(t)d"'
-                   ' LAST_MODIFIED="%(t)d">Reddit</H3>'
-                   '\n<DL><P>\n' % {'t': t})
+                   ' LAST_MODIFIED="%(t)d">%(folder_name)s</H3>'
+                   '\n<DL><P>\n' % {'t': t, 'folder_name': self._folder_name})
+
         for folder in sorted(list(urls.keys())):
             content += ('<DT><H3 ADD_DATE="%(t)d" LAST_MODIFIED="%(t)d">%(n)s'
                         '</H3>\n<DL><P>\n' % {'t': t, 'n': folder})
@@ -226,20 +228,22 @@ def write_csv(csv_rows, file_name):
             csvwriter.writerow(row)
 
 
-def process(reddit, seq, file_name):
+def process(reddit, seq, file_name, folder_name):
     """Write csv and html from a list of results.
 
     Args:
       reddit: reddit praw's instance
       seq (list): list to write
       file_name: base file name without extension
+      folder_name: top level folder name for the exported html bookmarks
     """
     csv_rows = get_csv_rows(reddit, seq)
     # write csv using csv module
     write_csv(csv_rows, file_name + ".csv")
     logging.debug('csv written.')
     # convert csv to bookmark
-    converter = Converter(file_name + ".csv", file_name + ".html")
+    converter = Converter(file_name + ".csv", file_name + ".html",
+                          folder_name=folder_name)
     converter.convert()
     logging.debug('html written.')
 
@@ -247,25 +251,25 @@ def process(reddit, seq, file_name):
 def save_upvoted(reddit):
     """ save upvoted posts """
     seq = reddit.user.me().upvoted(limit=None)
-    process(reddit, seq, "export-upvoted")
+    process(reddit, seq, "export-upvoted", "Reddit - Upvoted")
 
 
 def save_saved(reddit):
     """ save saved posts """
     seq = reddit.user.me().saved(limit=None)
-    process(reddit, seq, "export-saved")
+    process(reddit, seq, "export-saved", "Reddit - Saved")
 
 
 def save_comments(reddit):
     """ save comments posts """
     seq = reddit.user.me().comments.new(limit=None)
-    process(reddit, seq, "export-comments")
+    process(reddit, seq, "export-comments", "Reddit - Comments")
 
 
 def save_submissions(reddit):
     """ save saved posts """
     seq = reddit.user.me().submissions.new(limit=None)
-    process(reddit, seq, "export-submissions")
+    process(reddit, seq, "export-submissions", "Reddit - Submissions")
 
 
 def main():
