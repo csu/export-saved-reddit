@@ -34,10 +34,10 @@ class Converter():
             if not url:
                 continue
             else:
-                folder = url[3].strip()
+                folder = url[4].strip()
             if folder not in list(parsed_urls.keys()):
                 parsed_urls[folder] = []
-            parsed_urls[folder].append([url[0], url[1]])
+            parsed_urls[folder].append([url[0], url[1], url[2]])
         return parsed_urls
 
     def convert(self):
@@ -53,9 +53,10 @@ class Converter():
         for folder in sorted(list(urls.keys())):
             content += ('<DT><H3 ADD_DATE="%(t)d" LAST_MODIFIED="%(t)d">%(n)s'
                         '</H3>\n<DL><P>\n' % {'t': t, 'n': folder})
-            for url in urls[folder]:
-                content += ('<DT><A HREF="%s" ADD_DATE="%d">%s</A>\n'
-                            % (url[0], t, url[1]))
+            for url, title, add_date in urls[folder]:
+                content += ('<DT><A HREF="%(url)s" ADD_DATE="%(created)d"'
+                            ' LAST_MODIFIED="%(created)d">%(title)s</A>\n'
+                            % {'url': url, 'created': int(add_date), 'title': title})
             content += '</DL><P>\n'
         content += '</DL><P>\n' * 3
         ifile = open(self._html_file, 'w')
@@ -130,7 +131,7 @@ def account_details(args):
     password = None
     client_id = None
     client_secret = None
-    if args.username and args.password and args.client_id and args.client_secret:
+    if args and args.username and args.password and args.client_id and args.client_secret:
         username = args.username
         password = args.password
         client_id = args.client_id
@@ -189,6 +190,9 @@ def get_csv_rows(reddit, seq):
         # Fix possible buggy utf-8
         title = i.title.encode('utf-8').decode('utf-8')
         logging.debug('title: {}'.format(title))
+
+        created = int(i.created)
+
         try:
             folder = str(i.subreddit)
         except AttributeError:
@@ -197,7 +201,8 @@ def get_csv_rows(reddit, seq):
             permalink = i.permalink()
         else:
             permalink = i.permalink
-        csv_rows.append([reddit_url + permalink, title, None, folder])
+
+        csv_rows.append([reddit_url + permalink, title, created, None, folder])
 
     return csv_rows
 
@@ -210,7 +215,7 @@ def write_csv(csv_rows, file_name):
         file_name (string): filename written
     """
     # csv setting
-    csv_fields = ['URL', 'Title', 'Selection', 'Folder']
+    csv_fields = ['URL', 'Title', 'Created', 'Selection', 'Folder']
     delimiter = ','
 
     # write csv using csv module
