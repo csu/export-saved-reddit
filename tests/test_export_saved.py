@@ -10,7 +10,8 @@ import pytest
     [(
         [],
         {
-            'upvoted': False, 'client_secret': None, 'password': None, 'verbose': False,
+            'all': False, 'upvoted': False, 'verbose': False,
+            'client_secret': None, 'password': None,
             'username': None, 'client_id': None
         }
     )]
@@ -27,30 +28,33 @@ def test_get_args(argv, exp_res):
     [
         (
             argparse.Namespace(
-                link_title='link_title', subreddit='subreddit', permalink='permalink'),
-            ['permalink', b'link_title', None, 'subreddit']
+                link_title='link_title', subreddit='subreddit',
+                permalink='permalink', created='10'),
+            ['https://www.reddit.com/permalink', 'link_title', 10, None, 'subreddit']
         ),
         (
             argparse.Namespace(
-                title='title', permalink='permalink'),
-            ['permalink', b'title', None, 'None']
+                title='title', permalink='permalink', created='invalid'),
+            ['https://www.reddit.com/permalink', 'title', 0, None, 'None']
         ),
     ]
 )
 def test_get_csv_rows(item, csv_rows):
     """test func."""
     from export_saved import get_csv_rows
-    res = get_csv_rows(seq=[item])
+    reddit = mock.Mock()
+    reddit.config.reddit_url = "https://www.reddit.com/"
+    res = get_csv_rows(reddit, seq=[item])
     assert res == [csv_rows]
 
 
 def test_write_csv():
     """test func."""
-    csv_rows = [['url1', 'title1', None, 'folder1']]
+    csv_rows = [['url1', 'title1', 10, None, 'folder1']]
     with mock.patch('export_saved.open') as m_open:
         from export_saved import write_csv
         write_csv(csv_rows)
         m_open.return_value.__enter__.return_value.assert_has_calls([
-            mock.call.write('URL,Title,Selection,Folder\r\n'),
-            mock.call.write('url1,title1,,folder1\r\n')
+            mock.call.write('URL,Title,Created,Selection,Folder\r\n'),
+            mock.call.write('url1,title1,10,,folder1\r\n')
         ])

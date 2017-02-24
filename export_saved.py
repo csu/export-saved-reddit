@@ -193,7 +193,10 @@ def get_csv_rows(reddit, seq):
         title = i.title.encode('utf-8').decode('utf-8')
         logging.debug('title: {}'.format(title))
 
-        created = int(i.created)
+        try:
+            created = int(i.created)
+        except ValueError:
+            created = 0
 
         try:
             folder = str(i.subreddit)
@@ -209,13 +212,15 @@ def get_csv_rows(reddit, seq):
     return csv_rows
 
 
-def write_csv(csv_rows, file_name):
+def write_csv(csv_rows, file_name=None):
     """write csv using csv module.
 
     Args:
         csv_rows (list): CSV rows.
         file_name (string): filename written
     """
+    file_name = file_name if file_name is not None else 'export-saved.csv'
+
     # csv setting
     csv_fields = ['URL', 'Title', 'Created', 'Selection', 'Folder']
     delimiter = ','

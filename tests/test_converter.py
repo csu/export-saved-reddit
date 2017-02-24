@@ -18,18 +18,18 @@ def test_init():
     [
         (
             [
-                ['header0', 'header1', 'header2', 'header3'],
-                ['url0', 'url1', None, 'folder1'],
-                ['url2', 'url3', None, 'folder2'],
-                ['url4', 'url5', None, 'folder1'],
+                ['header0', 'header1', 'header2', 'header3', 'header4'],
+                ['url0', 'title0', '0', None, 'folder1'],
+                ['url1', 'title1', '1', None, 'folder2'],
+                ['url2', 'title2', '2', None, 'folder1'],
             ],
             {
                 'folder1': [
-                    ['url0', 'url1'],
-                    ['url4', 'url5'],
+                    ['url0', 'title0', '0'],
+                    ['url2', 'title2', '2'],
                 ],
                 'folder2': [
-                    ['url2', 'url3']
+                    ['url1', 'title1', '1']
                 ]
             }
         )
@@ -50,11 +50,11 @@ def test_convert():
     """test method."""
     parse_urls_result = {
         'folder1': [
-            ['url0', 'url1'],
-            ['url4', 'url5'],
+            ['url0', 'title0', '0'],
+            ['url2', 'title2', '2'],
         ],
         'folder2': [
-            ['url2', 'url3']
+            ['url1', 'title1', '1']
         ]
     }
     ifile = mock.Mock()
