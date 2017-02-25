@@ -13,6 +13,18 @@ def test_init():
     assert obj._file == file_
 
 
+def test_init_optional_parameters():
+    """test init."""
+    file_ = mock.Mock()
+    html_file_ = mock.Mock()
+    folder_name_ = mock.Mock()
+    from export_saved import Converter
+    obj = Converter(file=file_, html_file=html_file_, folder_name=folder_name_)
+    assert obj._file == file_
+    assert obj._html_file == html_file_
+    assert obj._folder_name == folder_name_
+
+
 @pytest.mark.parametrize(
     'urls_lists, exp_res',
     [
