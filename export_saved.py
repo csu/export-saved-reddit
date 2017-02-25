@@ -19,9 +19,11 @@ import praw
 class Converter():
     """Converts a CSV instapaper export to a Chrome bookmark file."""
 
-    def __init__(self, file):
+    def __init__(self, file, html_file=None, folder_name="Reddit"):
         """init method."""
         self._file = file
+        self._html_file = html_file if html_file is not None else 'chrome-bookmarks.html'
+        self._folder_name = folder_name if folder_name is not None else 'Reddit'
 
     def parse_urls(self):
         """Parse the file and returns a folder ordered list."""
@@ -33,10 +35,10 @@ class Converter():
             if not url:
                 continue
             else:
-                folder = url[3].strip()
+                folder = url[4].strip()
             if folder not in list(parsed_urls.keys()):
                 parsed_urls[folder] = []
-            parsed_urls[folder].append([url[0], url[1]])
+            parsed_urls[folder].append([url[0], url[1], url[2]])
         return parsed_urls
 
     def convert(self):
@@ -47,17 +49,19 @@ class Converter():
                    '<META HTTP-EQUIV="Content-Type" CONTENT="text/html;'
                    ' charset=UTF-8">\n<TITLE>Bookmarks</TITLE>'
                    '\n<H1>Bookmarks</H1>\n<DL><P>\n<DT><H3 ADD_DATE="%(t)d"'
-                   ' LAST_MODIFIED="%(t)d">Reddit</H3>'
-                   '\n<DL><P>\n' % {'t': t})
+                   ' LAST_MODIFIED="%(t)d">%(folder_name)s</H3>'
+                   '\n<DL><P>\n' % {'t': t, 'folder_name': self._folder_name})
+
         for folder in sorted(list(urls.keys())):
             content += ('<DT><H3 ADD_DATE="%(t)d" LAST_MODIFIED="%(t)d">%(n)s'
                         '</H3>\n<DL><P>\n' % {'t': t, 'n': folder})
-            for url in urls[folder]:
-                content += ('<DT><A HREF="%s" ADD_DATE="%d">%s</A>\n'
-                            % (url[0], t, url[1]))
+            for url, title, add_date in urls[folder]:
+                content += ('<DT><A HREF="%(url)s" ADD_DATE="%(created)d"'
+                            ' LAST_MODIFIED="%(created)d">%(title)s</A>\n'
+                            % {'url': url, 'created': int(add_date), 'title': title})
             content += '</DL><P>\n'
         content += '</DL><P>\n' * 3
-        ifile = open('chrome-bookmarks.html', 'w')
+        ifile = open(self._html_file, 'w')
         ifile.write(content)
 
 
@@ -86,31 +90,56 @@ def get_args(argv):
                         action="store_true")
     parser.add_argument("-up", "--upvoted", help="get upvoted posts instead of saved posts",
                         action="store_true")
+    parser.add_argument("-all", "--all", help="get upvoted, saved, comments and submissions",
+                        action="store_true")
 
     args = parser.parse_args(argv)
     return args
 
 
 def login(args):
-    """login.
+    """login method.
+
+    Args:
+        args (argparse.Namespace): Parsed arguments.
+
+    Returns: a logged on praw instance
+    """
+    # login
+    account = account_details(args=args)
+    client_id = account['client_id']
+    client_secret = account['client_secret']
+    username = account['username']
+    password = account['password']
+    reddit = praw.Reddit(client_id=client_id,
+                         client_secret=client_secret,
+                         user_agent='export saved 2.0',
+                         username=username,
+                         password=password)
+    logging.debug('Login succesful')
+    return reddit
+
+
+def account_details(args):
+    """Extract account informations.
 
     Args:
         args (argparse.Namespace): Parsed arguments.
 
     Returns:
-        Reddit object instance.
+        Account details
     """
     username = None
     password = None
     client_id = None
     client_secret = None
-    if args.username and args.password and args.client_id and args.client_secret:
+    if args and args.username and args.password and args.client_id and args.client_secret:
         username = args.username
         password = args.password
         client_id = args.client_id
         client_secret = args.client_secret
     else:
-        try:
+        try:  # pragma: no cover
             import AccountDetails
             username = AccountDetails.REDDIT_USERNAME
             password = AccountDetails.REDDIT_PASSWORD
@@ -125,7 +154,7 @@ def login(args):
             )
             exit(1)
 
-    if not username or not password or not client_id or not client_secret:
+    if not username or not password or not client_id or not client_secret:  # pragma: no cover
         print('You must specify ALL the arguments')
         print(
             'Either use the options (write [-h] for help menu) '
@@ -140,16 +169,18 @@ def login(args):
     }
 
 
-def get_csv_rows(seq):
+def get_csv_rows(reddit, seq):
     """get csv rows.
 
     Args:
+        reddit: reddit praw's instance
         seq (list): List of Reddit item.
 
     Returns:
         list: Parsed reddit item.
     """
     csv_rows = []
+    reddit_url = reddit.config.reddit_url
 
     # filter items for link
     for idx, i in enumerate(seq, 1):
@@ -158,32 +189,92 @@ def get_csv_rows(seq):
         if not hasattr(i, 'title'):
             i.title = i.link_title
 
-        logging.debug('title: {}'.format(i.title.encode('utf-8')))
+        # Fix possible buggy utf-8
+        title = i.title.encode('utf-8').decode('utf-8')
+        logging.debug('title: {}'.format(title))
+
+        try:
+            created = int(i.created)
+        except ValueError:
+            created = 0
+
         try:
             folder = str(i.subreddit)
         except AttributeError:
             folder = "None"
-        csv_rows.append([i.permalink, i.title.encode('utf-8'), None, folder])
+        if callable(i.permalink):
+            permalink = i.permalink()
+        else:
+            permalink = i.permalink
+
+        csv_rows.append([reddit_url + permalink, title, created, None, folder])
 
     return csv_rows
 
 
-def write_csv(csv_rows):
+def write_csv(csv_rows, file_name=None):
     """write csv using csv module.
 
     Args:
         csv_rows (list): CSV rows.
+        file_name (string): filename written
     """
+    file_name = file_name if file_name is not None else 'export-saved.csv'
+
     # csv setting
-    csv_fields = ['URL', 'Title', 'Selection', 'Folder']
+    csv_fields = ['URL', 'Title', 'Created', 'Selection', 'Folder']
     delimiter = ','
 
     # write csv using csv module
-    with open("export-saved.csv", "w") as f:
+    with open(file_name, "w") as f:
         csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
         csvwriter.writerow(csv_fields)
         for row in csv_rows:
             csvwriter.writerow(row)
+
+
+def process(reddit, seq, file_name, folder_name):
+    """Write csv and html from a list of results.
+
+    Args:
+      reddit: reddit praw's instance
+      seq (list): list to write
+      file_name: base file name without extension
+      folder_name: top level folder name for the exported html bookmarks
+    """
+    csv_rows = get_csv_rows(reddit, seq)
+    # write csv using csv module
+    write_csv(csv_rows, file_name + ".csv")
+    logging.debug('csv written.')
+    # convert csv to bookmark
+    converter = Converter(file_name + ".csv", file_name + ".html",
+                          folder_name=folder_name)
+    converter.convert()
+    logging.debug('html written.')
+
+
+def save_upvoted(reddit):
+    """ save upvoted posts """
+    seq = reddit.user.me().upvoted(limit=None)
+    process(reddit, seq, "export-upvoted", "Reddit - Upvoted")
+
+
+def save_saved(reddit):
+    """ save saved posts """
+    seq = reddit.user.me().saved(limit=None)
+    process(reddit, seq, "export-saved", "Reddit - Saved")
+
+
+def save_comments(reddit):
+    """ save comments posts """
+    seq = reddit.user.me().comments.new(limit=None)
+    process(reddit, seq, "export-comments", "Reddit - Comments")
+
+
+def save_submissions(reddit):
+    """ save saved posts """
+    seq = reddit.user.me().submissions.new(limit=None)
+    process(reddit, seq, "export-submissions", "Reddit - Submissions")
 
 
 def main():
@@ -194,38 +285,19 @@ def main():
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
 
-    # login
-    account = login(args=args)
-    client_id = account['client_id']
-    client_secret = account['client_secret']
-    username = account['username']
-    password = account['password']
-    reddit = praw.Reddit(client_id=client_id,
-                         client_secret=client_secret,
-                         user_agent='export saved 2.0',
-                         username=username,
-                         password=password)
-    logging.debug('Login succesful')
-
-    seq = None
+    reddit = login(args=args)
     if args.upvoted:
-        seq = reddit.user.get_upvoted(limit=None, time='all')
+        save_upvoted(reddit)
+    elif args.all:
+        save_upvoted(reddit)
+        save_saved(reddit)
+        save_submissions(reddit)
+        save_comments(reddit)
     else:
-        seq = reddit.redditor(username).saved(limit=None)
-
-    csv_rows = get_csv_rows(seq)
-
-    # write csv using csv module
-    write_csv(csv_rows)
-    logging.debug('csv written.')
-
-    # convert csv to bookmark
-    converter = Converter("export-saved.csv")
-    converter.convert()
-    logging.debug('html written.')
+        save_saved(reddit)
 
     sys.exit(0)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
