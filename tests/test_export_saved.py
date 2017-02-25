@@ -106,7 +106,8 @@ def test_account_details(username, password, client_id, client_secret):
     from export_saved import account_details
     if not cond_match:
         with pytest.raises(SystemExit):
-            account_details(args)
+            with mock.patch.dict('sys.modules', {'AccountDetails': None}):
+                account_details(args)
         return
     res = account_details(args)
     assert res == ns_kwargs
