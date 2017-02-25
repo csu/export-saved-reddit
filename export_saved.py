@@ -139,7 +139,7 @@ def account_details(args):
         client_id = args.client_id
         client_secret = args.client_secret
     else:
-        try:
+        try:  # pragma: no cover
             import AccountDetails
             username = AccountDetails.REDDIT_USERNAME
             password = AccountDetails.REDDIT_PASSWORD
@@ -154,7 +154,7 @@ def account_details(args):
             )
             exit(1)
 
-    if not username or not password or not client_id or not client_secret:
+    if not username or not password or not client_id or not client_secret:  # pragma: no cover
         print('You must specify ALL the arguments')
         print(
             'Either use the options (write [-h] for help menu) '
@@ -299,5 +299,5 @@ def main():
     sys.exit(0)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
