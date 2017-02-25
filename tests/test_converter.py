@@ -22,6 +22,7 @@ def test_init():
                 ['url0', 'title0', '0', None, 'folder1'],
                 ['url1', 'title1', '1', None, 'folder2'],
                 ['url2', 'title2', '2', None, 'folder1'],
+                [],
             ],
             {
                 'folder1': [
