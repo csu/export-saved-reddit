@@ -33,7 +33,7 @@ To install without git, [download the source code from GitHub](https://github.co
     usage: export_saved.py [-h] [-u USERNAME] [-p PASSWORD] [-v] [-up]
 
     Exports saved Reddit posts into a HTML filethat is ready to be imported into
-    Google Chrome
+    Google Chrome or Firefox
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -47,6 +47,7 @@ To install without git, [download the source code from GitHub](https://github.co
                             pass in client secret as argument
       -v, --verbose         increase output verbosity
       -up, --upvoted        get upvoted posts instead of saved posts
+      -all, --all           get upvoted, saved, comments and submissions
 
 
 ## Updating
