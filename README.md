@@ -30,9 +30,10 @@ To install without git, [download the source code from GitHub](https://github.co
 
 ### Additional Options
 
-    usage: export_saved.py [-h] [-u USERNAME] [-p PASSWORD] [-v] [-up]
+    usage: export_saved.py [-h] [-u USERNAME] [-p PASSWORD] [-id CLIENT_ID]
+                            [-s CLIENT_SECRET] [-v] [-up] [-all]
 
-    Exports saved Reddit posts into a HTML filethat is ready to be imported into
+    Exports saved Reddit posts into a HTML file that is ready to be imported into
     Google Chrome or Firefox
 
     optional arguments:
