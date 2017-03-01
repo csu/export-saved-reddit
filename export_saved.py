@@ -77,7 +77,7 @@ def get_args(argv):
     parser = argparse.ArgumentParser(
         description=(
             'Exports saved Reddit posts into a HTML file '
-            'that is ready to be imported into Google Chrome'
+            'that is ready to be imported into Google Chrome or Firefox'
         )
     )
 
