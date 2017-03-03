@@ -1,12 +1,14 @@
 # Export Saved Reddit Posts
+
 Exports saved and/or upvoted Reddit posts into a HTML file that is ready to be imported into Google Chrome. Sorts items into folders by subreddit.
 
 ## Requirements
 * [Python 3.x](https://www.python.org/downloads/)
 * [pip](https://pip.pypa.io/en/stable/installing/)
-* [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) (recommended)
+* [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) (recommended) 
 
 ## Installation
+
 First, make sure you have [Python 3.x](https://www.python.org/downloads/), [pip](https://pip.pypa.io/en/stable/installing/), and [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed on your machine.
 
 Run the following in your command prompt to install:
@@ -49,7 +51,6 @@ To install without git, [download the source code from GitHub](https://github.co
       -v, --verbose         increase output verbosity
       -up, --upvoted        get upvoted posts instead of saved posts
       -all, --all           get upvoted, saved, comments and submissions
-
 
 ## Updating
 To update the script to the latest version, enter the `export-saved-reddit` folder in your shell/command prompt and enter the following:
