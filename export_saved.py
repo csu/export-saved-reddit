@@ -199,13 +199,15 @@ def get_csv_rows(reddit, seq):
             created = 0
 
         try:
-            folder = str(i.subreddit)
+            folder = str(i.subreddit).encode('utf-8')
         except AttributeError:
             folder = "None"
+
         if callable(i.permalink):
             permalink = i.permalink()
         else:
             permalink = i.permalink
+        permalink = permalink.encode('utf-8')
 
         csv_rows.append([reddit_url + permalink, title, created, None, folder])
 
@@ -230,7 +232,7 @@ def write_csv(csv_rows, file_name=None):
         csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
         csvwriter.writerow(csv_fields)
         for row in csv_rows:
-            csvwriter.writerow(row.encode('utf-8'))
+            csvwriter.writerow(row)
 
 
 def process(reddit, seq, file_name, folder_name):
