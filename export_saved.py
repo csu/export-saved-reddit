@@ -230,7 +230,7 @@ def write_csv(csv_rows, file_name=None):
         csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
         csvwriter.writerow(csv_fields)
         for row in csv_rows:
-            csvwriter.writerow(row)
+            csvwriter.writerow(row.encode('utf-8'))
 
 
 def process(reddit, seq, file_name, folder_name):
