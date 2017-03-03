@@ -13,23 +13,36 @@ def test_init():
     assert obj._file == file_
 
 
+def test_init_optional_parameters():
+    """test init."""
+    file_ = mock.Mock()
+    html_file_ = mock.Mock()
+    folder_name_ = mock.Mock()
+    from export_saved import Converter
+    obj = Converter(file=file_, html_file=html_file_, folder_name=folder_name_)
+    assert obj._file == file_
+    assert obj._html_file == html_file_
+    assert obj._folder_name == folder_name_
+
+
 @pytest.mark.parametrize(
     'urls_lists, exp_res',
     [
         (
             [
-                ['header0', 'header1', 'header2', 'header3'],
-                ['url0', 'url1', None, 'folder1'],
-                ['url2', 'url3', None, 'folder2'],
-                ['url4', 'url5', None, 'folder1'],
+                ['header0', 'header1', 'header2', 'header3', 'header4'],
+                ['url0', 'title0', '0', None, 'folder1'],
+                ['url1', 'title1', '1', None, 'folder2'],
+                ['url2', 'title2', '2', None, 'folder1'],
+                [],
             ],
             {
                 'folder1': [
-                    ['url0', 'url1'],
-                    ['url4', 'url5'],
+                    ['url0', 'title0', '0'],
+                    ['url2', 'title2', '2'],
                 ],
                 'folder2': [
-                    ['url2', 'url3']
+                    ['url1', 'title1', '1']
                 ]
             }
         )
@@ -50,11 +63,11 @@ def test_convert():
     """test method."""
     parse_urls_result = {
         'folder1': [
-            ['url0', 'url1'],
-            ['url4', 'url5'],
+            ['url0', 'title0', '0'],
+            ['url2', 'title2', '2'],
         ],
         'folder2': [
-            ['url2', 'url3']
+            ['url1', 'title1', '1']
         ]
     }
     ifile = mock.Mock()
