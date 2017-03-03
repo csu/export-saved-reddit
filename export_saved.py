@@ -199,7 +199,7 @@ def get_csv_rows(reddit, seq):
             created = 0
 
         try:
-            folder = str(i.subreddit).encode('utf-8')
+            folder = str(i.subreddit).encode('utf-8').decode('utf-8')
         except AttributeError:
             folder = "None"
 
@@ -207,7 +207,7 @@ def get_csv_rows(reddit, seq):
             permalink = i.permalink()
         else:
             permalink = i.permalink
-        permalink = permalink.encode('utf-8')
+        permalink = permalink.encode('utf-8').decode('utf-8')
 
         csv_rows.append([reddit_url + permalink, title, created, None, folder])
 
