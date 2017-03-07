@@ -32,10 +32,7 @@ class Converter():
         parsed_urls = {}
         next(urls)
         for url in urls:
-            if not url:
-                continue
-            else:
-                folder = url[4].strip()
+            folder = url[4].strip()
             if folder not in list(parsed_urls.keys()):
                 parsed_urls[folder] = []
             parsed_urls[folder].append([url[0], url[1], url[2]])
@@ -228,7 +225,7 @@ def write_csv(csv_rows, file_name=None):
     delimiter = ','
 
     # write csv using csv module
-    with open(file_name, "w") as f:
+    with open(file_name, "w", newline='') as f:
         csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
         csvwriter.writerow(csv_fields)
         for row in csv_rows:
