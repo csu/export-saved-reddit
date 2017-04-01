@@ -1,5 +1,7 @@
 # Export Saved Reddit Posts
 
+[![Build Status](https://travis-ci.org/csu/export-saved-reddit.svg?branch=master)](https://travis-ci.org/csu/export-saved-reddit) [![Code Coverage](https://img.shields.io/codecov/c/github/csu/export-saved-reddit.svg)](https://codecov.io/gh/csu/export-saved-reddit)
+
 Exports saved and/or upvoted Reddit posts into a HTML file that is ready to be imported into Google Chrome. Sorts items into folders by subreddit.
 
 ## Requirements
@@ -20,6 +22,7 @@ Run the following in your command prompt to install:
 To install without git, [download the source code from GitHub](https://github.com/csu/export-saved-reddit/archive/master.zip), extract the archive, and follow the steps above beginning from the second line.
 
 ## Usage
+
 1. [Make a new Reddit](https://www.reddit.com/prefs/apps) app to get a `client id` and a `client secret`.
 
     - Scroll to the bottom of the page and click "create app"
@@ -33,11 +36,11 @@ To install without git, [download the source code from GitHub](https://github.co
 ### Additional Options
 
     usage: export_saved.py [-h] [-u USERNAME] [-p PASSWORD] [-id CLIENT_ID]
-                            [-s CLIENT_SECRET] [-v] [-up] [-all]
-
+                           [-s CLIENT_SECRET] [-v] [-up] [-all]
+    
     Exports saved Reddit posts into a HTML file that is ready to be imported into
     Google Chrome or Firefox
-
+    
     optional arguments:
       -h, --help            show this help message and exit
       -u USERNAME, --username USERNAME
@@ -58,9 +61,8 @@ To update the script to the latest version, enter the `export-saved-reddit` fold
     git pull
 
 ## Help
-If you have any questions or comments, please [open an issue on GitHub](https://github.com/csu/export-saved-reddit/issues) or [contact me](https://christopher.su/about/).
+If you have any questions or comments, please [open an issue on GitHub](https://github.com/csu/export-saved-reddit/issues).
 
 ## [Contributing](https://github.com/csu/export-saved-reddit/blob/master/CONTRIBUTORS.md)
-[![Build Status](https://travis-ci.org/csu/export-saved-reddit.svg?branch=master)](https://travis-ci.org/csu/export-saved-reddit)
 
 If you would like to contribute, check out the project's [open issues](https://github.com/csu/export-saved-reddit/issues). [Pull requests](https://github.com/csu/export-saved-reddit/pulls) are welcome.
