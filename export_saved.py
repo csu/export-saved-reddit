@@ -61,7 +61,7 @@ class Converter():
                             % {'url': url, 'created': int(add_date), 'title': title})
             content += '</DL><P>\n'
         content += '</DL><P>\n' * 3
-        ifile = open(self._html_file, 'w')
+        ifile = open(self._html_file, 'wb')
         ifile.write(content)
 
 
@@ -228,7 +228,7 @@ def write_csv(csv_rows, file_name=None):
     delimiter = ','
 
     # write csv using csv module
-    with open(file_name, "w") as f:
+    with open(file_name, "wb") as f:
         csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
         csvwriter.writerow(csv_fields)
         for row in csv_rows:
