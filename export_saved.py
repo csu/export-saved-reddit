@@ -228,11 +228,18 @@ def write_csv(csv_rows, file_name=None):
     delimiter = ','
 
     # write csv using csv module
-    with open(file_name, "wb") as f:
-        csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
-        csvwriter.writerow(csv_fields)
-        for row in csv_rows:
-            csvwriter.writerow(row)
+    try:
+        with open(file_name, "wb") as f:
+            csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
+            csvwriter.writerow(csv_fields)
+            for row in csv_rows:
+                csvwriter.writerow(row)
+    except TypeError:
+        with open(file_name, "w") as f:
+            csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
+            csvwriter.writerow(csv_fields)
+            for row in csv_rows:
+                csvwriter.writerow(row)
 
 
 def process(reddit, seq, file_name, folder_name):
