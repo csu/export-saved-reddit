@@ -195,7 +195,10 @@ def get_csv_rows(reddit, seq):
 
         # Fix possible buggy utf-8
         title = i.title.encode('utf-8').decode('utf-8')
-        logging.debug('title: {}'.format(title))
+        try:
+            logging.debug('title: {}'.format(title))
+        except UnicodeEncodeError:
+            logging.debug('title: {}'.format(title.encode('utf8', 'ignore')))
 
         try:
             created = int(i.created)
