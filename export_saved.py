@@ -61,8 +61,12 @@ class Converter():
                             % {'url': url, 'created': int(add_date), 'title': title})
             content += '</DL><P>\n'
         content += '</DL><P>\n' * 3
-        ifile = open(self._html_file, 'wb')
-        ifile.write(content)
+        try:
+            with open(self._html_file, 'wb') as ifile:
+                ifile.write(content)
+        except TypeError:
+            with open(self._html_file, 'w') as ifile:
+                ifile.write(content)
 
 
 def get_args(argv):
