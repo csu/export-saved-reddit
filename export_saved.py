@@ -62,7 +62,10 @@ class Converter():
             content += '</DL><P>\n'
         content += '</DL><P>\n' * 3
         ifile = open(self._html_file, 'wb')
-        ifile.write(content)
+        try:
+            ifile.write(content)
+        except TypeError:
+            ifile.write(content.encode('utf-8', 'ignore'))
 
 
 def get_args(argv):
@@ -191,7 +194,10 @@ def get_csv_rows(reddit, seq):
 
         # Fix possible buggy utf-8
         title = i.title.encode('utf-8').decode('utf-8')
-        logging.debug('title: {}'.format(title))
+        try:
+            logging.debug('title: {}'.format(title))
+        except UnicodeEncodeError:
+            logging.debug('title: {}'.format(title.encode('utf8', 'ignore')))
 
         try:
             created = int(i.created)
@@ -228,11 +234,21 @@ def write_csv(csv_rows, file_name=None):
     delimiter = ','
 
     # write csv using csv module
-    with open(file_name, "wb") as f:
-        csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
-        csvwriter.writerow(csv_fields)
-        for row in csv_rows:
-            csvwriter.writerow(row)
+    try:
+        with open(file_name, "wb") as f:
+            csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
+            csvwriter.writerow(csv_fields)
+            for row in csv_rows:
+                csvwriter.writerow(row)
+    except TypeError:
+        with open(file_name, "w") as f:
+            csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
+            csvwriter.writerow(csv_fields)
+            for row in csv_rows:
+                try:
+                    csvwriter.writerow(row)
+                except UnicodeEncodeError:
+                    csvwriter.writerow(row.encode('utf-8', 'ignore'))
 
 
 def process(reddit, seq, file_name, folder_name):

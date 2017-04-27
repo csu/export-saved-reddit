@@ -2,6 +2,7 @@
 from itertools import product
 from unittest import mock
 import argparse
+import os
 
 import pytest
 
@@ -59,9 +60,17 @@ def test_get_csv_rows(item, csv_rows):
     assert res == [csv_rows]
 
 
+def test_write_csv_with_str(tmpdir):
+    """test func."""
+    file_name = os.path.join(tmpdir.strpath, 'test.csv')
+    csv_rows = ['url1', 'title1', '10', '', 'folder1']
+    from export_saved import write_csv
+    write_csv(csv_rows, file_name)
+
+
 def test_write_csv():
     """test func."""
-    csv_rows = [['url1', 'title1', 10, None, 'folder1']]
+    csv_rows = [['url1', 'title1', '10', '', 'folder1']]
     with mock.patch('export_saved.open') as m_open:
         from export_saved import write_csv
         write_csv(csv_rows)
