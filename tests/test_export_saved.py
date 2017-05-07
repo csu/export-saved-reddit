@@ -14,7 +14,8 @@ import pytest
         {
             'all': False, 'upvoted': False, 'verbose': False,
             'client_secret': None, 'password': None,
-            'username': None, 'client_id': None
+            'username': None, 'client_id': None,
+            'version': False
         }
     )]
 )
