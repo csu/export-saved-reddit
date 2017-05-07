@@ -98,7 +98,7 @@ def get_args(argv):
                         action="store_true")
     parser.add_argument("-all", "--all", help="get upvoted, saved, comments and submissions",
                         action="store_true")
-    parser.add_argument("-v", "--version", help="get program version.", action="store_true")
+    parser.add_argument("-V", "--version", help="get program version.", action="store_true")
 
     args = parser.parse_args(argv)
     return args
