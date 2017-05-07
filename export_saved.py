@@ -15,6 +15,9 @@ import sys
 import praw
 
 
+__version__ = '0.1.1'
+
+
 # # Converter class from https://gist.github.com/raphaa/1327761
 class Converter():
     """Converts a CSV instapaper export to a Chrome bookmark file."""
@@ -95,6 +98,7 @@ def get_args(argv):
                         action="store_true")
     parser.add_argument("-all", "--all", help="get upvoted, saved, comments and submissions",
                         action="store_true")
+    parser.add_argument("-V", "--version", help="get program version.", action="store_true")
 
     args = parser.parse_args(argv)
     return args
@@ -302,6 +306,10 @@ def main():
     # set logging config
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
+    # print program version.
+    if args.version:
+        print(__version__)
+        return
 
     reddit = login(args=args)
     if args.upvoted:
