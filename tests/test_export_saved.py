@@ -14,7 +14,8 @@ import pytest
         {
             'all': False, 'upvoted': False, 'verbose': False,
             'client_secret': None, 'password': None,
-            'username': None, 'client_id': None
+            'username': None, 'client_id': None,
+            'version': False
         }
     )]
 )
@@ -173,6 +174,7 @@ def test_main(verbose, upvoted, all):
             verbose=verbose,
             upvoted=upvoted,
             all=all,
+            version=False
         )
         import export_saved
         # run
