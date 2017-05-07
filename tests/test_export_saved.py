@@ -174,6 +174,7 @@ def test_main(verbose, upvoted, all):
             verbose=verbose,
             upvoted=upvoted,
             all=all,
+            version=False
         )
         import export_saved
         # run
