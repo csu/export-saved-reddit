@@ -16,6 +16,10 @@ import praw
 
 
 __version__ = '0.1.1'
+if sys.version_info >= (3, 0):
+    PYTHON3 = True
+else:
+    PYTHON3 = False
 
 
 # # Converter class from https://gist.github.com/raphaa/1327761
@@ -243,7 +247,13 @@ def write_csv(csv_rows, file_name=None):
             csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
             csvwriter.writerow(csv_fields)
             for row in csv_rows:
-                csvwriter.writerow(row)
+                if PYTHON3:
+                    csvwriter.writerow(row)
+                else:
+                    try:
+                        csv.writer.writerow(row)
+                    except UnicodeEncodeError:
+                        csv.writer.writerow(row.encode('utf8', 'ignore'))
     except TypeError:
         with open(file_name, "w") as f:
             csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
