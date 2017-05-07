@@ -306,6 +306,10 @@ def main():
     # set logging config
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
+    # print program version.
+    if args.version:
+        print(__version__)
+        return
 
     reddit = login(args=args)
     if args.upvoted:
