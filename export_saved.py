@@ -228,6 +228,15 @@ def get_csv_rows(reddit, seq):
     return csv_rows
 
 
+def encode_row(row):  # pragma: no cover
+    """encode row."""
+    for x in row:
+        if isinstance(x, int):
+            yield x
+        else:
+            yield x.encode('utf8', 'ignore')
+
+
 def write_csv(csv_rows, file_name=None):
     """write csv using csv module.
 
@@ -253,7 +262,7 @@ def write_csv(csv_rows, file_name=None):
                     try:
                         csvwriter.writerow(row)
                     except UnicodeEncodeError:
-                        csvwriter.writerow([x.encode('utf8', 'ignore') for x in row])
+                        csvwriter.writerow(list(encode_row(row)))
     except TypeError:
         with open(file_name, "w") as f:
             csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
@@ -262,7 +271,7 @@ def write_csv(csv_rows, file_name=None):
                 try:
                     csvwriter.writerow(row)
                 except UnicodeEncodeError:
-                    csvwriter.writerow([x.encode('utf8', 'ignore') for x in row])
+                    csvwriter.writerow(list(encode_row(row)))
 
 
 def process(reddit, seq, file_name, folder_name):
