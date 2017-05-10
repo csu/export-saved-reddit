@@ -251,9 +251,9 @@ def write_csv(csv_rows, file_name=None):
                     csvwriter.writerow(row)
                 else:
                     try:
-                        csv.writer.writerow(row)
+                        csvwriter.writerow(row)
                     except UnicodeEncodeError:
-                        csv.writer.writerow(row.encode('utf8', 'ignore'))
+                        csvwriter.writerow(row.encode('utf8', 'ignore'))
     except TypeError:
         with open(file_name, "w") as f:
             csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
