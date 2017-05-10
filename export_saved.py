@@ -16,6 +16,10 @@ import praw
 
 
 __version__ = '0.1.1'
+if sys.version_info >= (3, 0):
+    PYTHON3 = True
+else:
+    PYTHON3 = False
 
 
 # # Converter class from https://gist.github.com/raphaa/1327761
@@ -224,6 +228,15 @@ def get_csv_rows(reddit, seq):
     return csv_rows
 
 
+def encode_row(row):  # pragma: no cover
+    """encode row."""
+    for x in row:
+        if isinstance(x, int):
+            yield x
+        else:
+            yield x.encode('utf8', 'ignore')
+
+
 def write_csv(csv_rows, file_name=None):
     """write csv using csv module.
 
@@ -243,7 +256,13 @@ def write_csv(csv_rows, file_name=None):
             csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
             csvwriter.writerow(csv_fields)
             for row in csv_rows:
-                csvwriter.writerow(row)
+                if PYTHON3:
+                    csvwriter.writerow(row)
+                else:
+                    try:
+                        csvwriter.writerow(row)
+                    except UnicodeEncodeError:
+                        csvwriter.writerow(list(encode_row(row)))
     except TypeError:
         with open(file_name, "w") as f:
             csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
@@ -252,7 +271,7 @@ def write_csv(csv_rows, file_name=None):
                 try:
                     csvwriter.writerow(row)
                 except UnicodeEncodeError:
-                    csvwriter.writerow(row.encode('utf-8', 'ignore'))
+                    csvwriter.writerow(list(encode_row(row)))
 
 
 def process(reddit, seq, file_name, folder_name):
