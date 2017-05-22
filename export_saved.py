@@ -301,6 +301,8 @@ def save_submissions(reddit):
 
 def main():
     """main func."""
+    reload(sys)
+    sys.setdefaultencoding('UTF8')
     args = get_args(sys.argv[1:])
 
     # set logging config
