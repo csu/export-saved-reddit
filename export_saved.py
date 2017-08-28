@@ -244,7 +244,7 @@ def write_csv(csv_rows, file_name=None):
             csvwriter.writerow(csv_fields)
             for row in csv_rows:
                 csvwriter.writerow(row)
-    except TypeError:
+    except (UnicodeEncodeError, TypeError) as e:
         with open(file_name, "w") as f:
             csvwriter = csv.writer(f, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
             csvwriter.writerow(csv_fields)
@@ -252,7 +252,7 @@ def write_csv(csv_rows, file_name=None):
                 try:
                     csvwriter.writerow(row)
                 except UnicodeEncodeError:
-                    csvwriter.writerow(row.encode('utf-8', 'ignore'))
+                    csvwriter.writerow([r.encode('utf-8', 'ignore') if isinstance(r, basestring) else r for r in row])
 
 
 def process(reddit, seq, file_name, folder_name):
