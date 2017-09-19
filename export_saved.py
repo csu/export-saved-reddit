@@ -92,8 +92,6 @@ def get_args(argv):
     parser.add_argument("-id", "--client-id", help="pass in client id  as argument")
     parser.add_argument("-s", "--client-secret", help="pass in client secret as argument")
 
-    # TODO: add -q, --quiet option to suppress output
-
     parser.add_argument("-up", "--upvoted", help="get upvoted posts instead of saved posts",
                         action="store_true")
     parser.add_argument("-all", "--all", help="get upvoted, saved, comments and submissions",
