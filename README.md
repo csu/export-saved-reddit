@@ -36,7 +36,7 @@ To install without git, [download the source code from GitHub](https://github.co
 ### Additional Options
 ```plain
 usage: export_saved.py [-h] [-u USERNAME] [-p PASSWORD] [-id CLIENT_ID]
-                       [-s CLIENT_SECRET] [-up] [-all] [-V]
+                       [-s CLIENT_SECRET] [-v] [-up] [-all] [-V]
 
 Exports saved Reddit posts into a HTML file that is ready to be imported into
 Google Chrome or Firefox
@@ -51,6 +51,8 @@ optional arguments:
                         pass in client id as argument
   -s CLIENT_SECRET, --client-secret CLIENT_SECRET
                         pass in client secret as argument
+  -v, --verbose         increase output verbosity (deprecated; doesn't do
+                        anything now)
   -up, --upvoted        get upvoted posts instead of saved posts
   -all, --all           get upvoted, saved, comments and submissions
   -V, --version         get program version.
