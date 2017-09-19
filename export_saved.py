@@ -92,13 +92,18 @@ def get_args(argv):
     parser.add_argument("-id", "--client-id", help="pass in client id  as argument")
     parser.add_argument("-s", "--client-secret", help="pass in client secret as argument")
 
-    parser.add_argument("-v", "--verbose", help="increase output verbosity (deprecated; doesn't do anything now)",
+    parser.add_argument("-v", "--verbose",
+                        help="increase output verbosity (deprecated; doesn't do anything now)",
                         action="store_true")
-    parser.add_argument("-up", "--upvoted", help="get upvoted posts instead of saved posts",
+    parser.add_argument("-up", "--upvoted",
+                        help="get upvoted posts instead of saved posts",
                         action="store_true")
-    parser.add_argument("-all", "--all", help="get upvoted, saved, comments and submissions",
+    parser.add_argument("-all", "--all",
+                        help="get upvoted, saved, comments and submissions",
                         action="store_true")
-    parser.add_argument("-V", "--version", help="get program version.", action="store_true")
+    parser.add_argument("-V", "--version",
+                        help="get program version.",
+                        action="store_true")
 
     args = parser.parse_args(argv)
     return args
@@ -303,11 +308,11 @@ def save_submissions(reddit):
 def main():
     """main func."""
     args = get_args(sys.argv[1:])
-    
+
     # set logging config
-    if args.verbose:      
+    if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
-        
+
     # print program version.
     if args.version:
         print(__version__)
