@@ -34,26 +34,29 @@ To install without git, [download the source code from GitHub](https://github.co
 4. Back in your shell, run `python export_saved.py` in the `export-saved-reddit` folder. This will run the export, which will create `chrome-bookmarks.html` and `export-saved.csv` files containing your data in the same folder.
 
 ### Additional Options
+```plain
+usage: export_saved.py [-h] [-u USERNAME] [-p PASSWORD] [-id CLIENT_ID]
+                       [-s CLIENT_SECRET] [-v] [-up] [-all] [-V]
 
-    usage: export_saved.py [-h] [-u USERNAME] [-p PASSWORD] [-id CLIENT_ID]
-                           [-s CLIENT_SECRET] [-v] [-up] [-all]
-    
-    Exports saved Reddit posts into a HTML file that is ready to be imported into
-    Google Chrome or Firefox
-    
-    optional arguments:
-      -h, --help            show this help message and exit
-      -u USERNAME, --username USERNAME
-                            pass in username as argument
-      -p PASSWORD, --password PASSWORD
-                            pass in password as argument
-      -id CLIENT_ID, --client-id CLIENT_ID
-                            pass in client id as argument
-      -s CLIENT_SECRET, --client-secret CLIENT_SECRET
-                            pass in client secret as argument
-      -v, --verbose         increase output verbosity
-      -up, --upvoted        get upvoted posts instead of saved posts
-      -all, --all           get upvoted, saved, comments and submissions
+Exports saved Reddit posts into a HTML file that is ready to be imported into
+Google Chrome or Firefox
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -u USERNAME, --username USERNAME
+                        pass in username as argument
+  -p PASSWORD, --password PASSWORD
+                        pass in password as argument
+  -id CLIENT_ID, --client-id CLIENT_ID
+                        pass in client id as argument
+  -s CLIENT_SECRET, --client-secret CLIENT_SECRET
+                        pass in client secret as argument
+  -v, --verbose         increase output verbosity (deprecated; doesn't do
+                        anything now)
+  -up, --upvoted        get upvoted posts instead of saved posts
+  -all, --all           get upvoted, saved, comments and submissions
+  -V, --version         get program version.
+```
 
 ## Updating
 To update the script to the latest version, enter the `export-saved-reddit` folder in your shell/command prompt and enter the following:

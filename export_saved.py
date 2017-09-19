@@ -15,7 +15,7 @@ import sys
 import praw
 
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 
 # # Converter class from https://gist.github.com/raphaa/1327761
@@ -92,13 +92,18 @@ def get_args(argv):
     parser.add_argument("-id", "--client-id", help="pass in client id  as argument")
     parser.add_argument("-s", "--client-secret", help="pass in client secret as argument")
 
-    parser.add_argument("-v", "--verbose", help="increase output verbosity",
+    parser.add_argument("-v", "--verbose",
+                        help="increase output verbosity (deprecated; doesn't do anything now)",
                         action="store_true")
-    parser.add_argument("-up", "--upvoted", help="get upvoted posts instead of saved posts",
+    parser.add_argument("-up", "--upvoted",
+                        help="get upvoted posts instead of saved posts",
                         action="store_true")
-    parser.add_argument("-all", "--all", help="get upvoted, saved, comments and submissions",
+    parser.add_argument("-all", "--all",
+                        help="get upvoted, saved, comments and submissions",
                         action="store_true")
-    parser.add_argument("-V", "--version", help="get program version.", action="store_true")
+    parser.add_argument("-V", "--version",
+                        help="get program version.",
+                        action="store_true")
 
     args = parser.parse_args(argv)
     return args
@@ -123,7 +128,7 @@ def login(args):
                          user_agent='export saved 2.0',
                          username=username,
                          password=password)
-    logging.debug('Login succesful')
+    logging.info('Login succesful')
     return reddit
 
 
@@ -191,7 +196,7 @@ def get_csv_rows(reddit, seq):
 
     # filter items for link
     for idx, i in enumerate(seq, 1):
-        logging.debug('processing item #{}'.format(idx))
+        logging.info('processing item #{}'.format(idx))
 
         if not hasattr(i, 'title'):
             i.title = i.link_title
@@ -199,9 +204,9 @@ def get_csv_rows(reddit, seq):
         # Fix possible buggy utf-8
         title = i.title.encode('utf-8').decode('utf-8')
         try:
-            logging.debug('title: {}'.format(title))
+            logging.info('title: {}'.format(title))
         except UnicodeEncodeError:
-            logging.debug('title: {}'.format(title.encode('utf8', 'ignore')))
+            logging.info('title: {}'.format(title.encode('utf8', 'ignore')))
 
         try:
             created = int(i.created)
@@ -268,12 +273,12 @@ def process(reddit, seq, file_name, folder_name):
     csv_rows = get_csv_rows(reddit, seq)
     # write csv using csv module
     write_csv(csv_rows, file_name + ".csv")
-    logging.debug('csv written.')
+    logging.info('csv written.')
     # convert csv to bookmark
     converter = Converter(file_name + ".csv", file_name + ".html",
                           folder_name=folder_name)
     converter.convert()
-    logging.debug('html written.')
+    logging.info('html written.')
 
 
 def save_upvoted(reddit):
@@ -307,6 +312,7 @@ def main():
     # set logging config
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
+
     # print program version.
     if args.version:
         print(__version__)
