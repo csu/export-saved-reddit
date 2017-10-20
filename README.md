@@ -27,7 +27,7 @@ To install without git, [download the source code from GitHub](https://github.co
     - You can name the app anything (e.g. "export-saved"). Select the "script" option. Put anything for the redirect URI (e.g. https://christopher.su).
     - After creating the app, the client id will appear under the app name while the client secret will be labeled "secret".
 
-    ![](https://i.imgur.com/CSqaFkO.png)
+    ![](https://i.imgur.com/zQZUEuB.png)
 
 2. In the `export-saved-reddit` folder, rename the `AccountDetails.py.example` file to `AccountDetails.py`.
 3. Open the `AccountDetails.py` in a text editor and enter your Reddit username, password, client id, client secret within the corresponding quotation marks. Save and close the file.
