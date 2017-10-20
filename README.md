@@ -10,7 +10,6 @@ Exports saved and/or upvoted Reddit posts into a HTML file that is ready to be i
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) (recommended) 
 
 ## Installation
-
 First, make sure you have [Python 3.x](https://www.python.org/downloads/), [pip](https://pip.pypa.io/en/stable/installing/), and [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed on your machine.
 
 Run the following in your command prompt to install:
@@ -22,21 +21,21 @@ Run the following in your command prompt to install:
 To install without git, [download the source code from GitHub](https://github.com/csu/export-saved-reddit/archive/master.zip), extract the archive, and follow the steps above beginning from the second line.
 
 ## Usage
-
 1. [Make a new Reddit](https://www.reddit.com/prefs/apps) app to get a `client id` and a `client secret`.
 
     - Scroll to the bottom of the page and click "create app"
     - You can name the app anything (e.g. "export-saved"). Select the "script" option. Put anything for the redirect URI (e.g. https://christopher.su).
     - After creating the app, the client id will appear under the app name while the client secret will be labeled "secret".
 
+    ![](https://i.imgur.com/CSqaFkO.png)
+
 2. In the `export-saved-reddit` folder, rename the `AccountDetails.py.example` file to `AccountDetails.py`.
 3. Open the `AccountDetails.py` in a text editor and enter your Reddit username, password, client id, client secret within the corresponding quotation marks. Save and close the file.
 4. Back in your shell, run `python export_saved.py` in the `export-saved-reddit` folder. This will run the export, which will create `chrome-bookmarks.html` and `export-saved.csv` files containing your data in the same folder.
 
 ### Additional Options
-
     usage: export_saved.py [-h] [-u USERNAME] [-p PASSWORD] [-id CLIENT_ID]
-                           [-s CLIENT_SECRET] [-v] [-up] [-all]
+                           [-s CLIENT_SECRET] [-v] [-up] [-all] [-V]
     
     Exports saved Reddit posts into a HTML file that is ready to be imported into
     Google Chrome or Firefox
@@ -54,6 +53,7 @@ To install without git, [download the source code from GitHub](https://github.co
       -v, --verbose         increase output verbosity
       -up, --upvoted        get upvoted posts instead of saved posts
       -all, --all           get upvoted, saved, comments and submissions
+      -V, --version         get program version.
 
 ## Updating
 To update the script to the latest version, enter the `export-saved-reddit` folder in your shell/command prompt and enter the following:
