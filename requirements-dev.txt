@@ -1,5 +1,5 @@
 -r requirements.txt
-pytest==3.0.6
+pytest==9.0.3
 pytest-cov==2.4.0
 flake8==3.3.0
 cogapp==2.5.1
